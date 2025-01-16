@@ -1,0 +1,12 @@
+%Chk=h2_tda.chk
+%Mem=2GB
+%rwf=h2_tda.rwf
+%NProcShared=32
+#p tda(nstates=6,root=1,conver=6) freq PBE1PBE/6-31G 6D 10F nosymm GFInput scf=tight IOP(10/33=4,10/95=9)
+
+title
+
+0 1
+H 0.000000 0.000000 0.000000
+H 0.000000 0.000000 0.740000
+

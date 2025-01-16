@@ -1,0 +1,13 @@
+%Chk=h2o_tda.chk
+%Mem=2GB
+%rwf=h2o_tda.rwf
+%NProcShared=32
+#p tda(nstates=6,root=1,conver=6) freq PBE1PBE/6-31G 6D 10F nosymm GFInput scf=tight IOP(10/33=4,10/95=9)
+
+title
+
+0 1
+O 0.000000 0.000000 0.000000
+H 0.000000 0.000000 0.957200
+H 0.000000 0.757160 -0.478600
+
