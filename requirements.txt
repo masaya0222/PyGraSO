@@ -1,0 +1,11 @@
+h5py==3.12.1
+iniconfig==2.0.0
+numpy==2.2.1
+packaging==24.2
+periodictable==2.0.2
+pluggy==1.5.0
+pyparsing==3.2.0
+pyscf==2.7.0
+pytest==8.3.4
+ruff==0.9.1
+scipy==1.14.1
