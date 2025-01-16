@@ -30,9 +30,10 @@ def make_cintopt(atm, bas, env, intor):
 
 
 class calc_ao_element:
-    def __init__(self, atoms, coordinates):
+    def __init__(self, atoms, coordinates, basis="6-31G"):
         self.atoms = atoms
         self.coordinates = coordinates
+        self.basis = basis
         self.mol = self.setup_mol()
         self.permu_basis, self.basis_idx = self.setup_permu()
         self.nbasis = len(self.permu_basis)
@@ -41,13 +42,15 @@ class calc_ao_element:
         self._ao_dip = None
         self._ao_dip_deriv = None
 
+        self._ao_soc = None
+
     def setup_mol(self):
         mol = gto.Mole()
         mol.atom = [
             (symbol, coord) for symbol, coord in zip(self.atoms, self.coordinates)
         ]
         mol.unit = "angstrom"
-        mol.basis = "6-31G"
+        mol.basis = self.basis
         mol.symmetry = False
         mol.cart = True
         mol.build()
@@ -110,6 +113,22 @@ class calc_ao_element:
         except Exception as e:
             raise ValueError(f"Error occur while reading ao_ovlp and ao_dip:{e}")
         return self._ao_dip_deriv
+
+    def get_ao_soc(self):
+        if self._ao_soc is not None:
+            return self._ao_soc
+        try:
+            intor_name = "int1e_pnucxp_cart"
+            ao_soc_tmp = gto.getints(
+                intor_name, self.mol._atm, self.mol._bas, env=self.mol._env
+            )
+            ao_soc = -1.0 * np.real(
+                ao_soc_tmp[np.ix_(np.arange(3), self.permu_basis, self.permu_basis)]
+            )
+            self._ao_soc = ao_soc
+        except Exception as e:
+            raise ValueError(f"Error occur while reading ao_ovlp and ao_soc:{e}")
+        return self._ao_soc
 
     def test(self):
         # intor_name = "cint1e_nuc_cart"

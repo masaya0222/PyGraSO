@@ -272,10 +272,10 @@ class gaussian_perser:
         try:
             xy_coeff = self.rwf_parser.parse(self.rwf_parser.XY_COEFFS)
             xy_coeff = [float(v.replace("D", "E")) for v in "  ".join(xy_coeff).split()]
-            dat_lenth = len(xy_coeff)
+            dat_length = len(xy_coeff)
             nl = 12
             ndim = self.noa * self.nva
-            mseek = int((dat_lenth - 12) / (ndim * 4 + 1))
+            mseek = int((dat_length - 12) / (ndim * 4 + 1))
 
             xpy_coeff = np.array(xy_coeff[nl : nl + ndim]).reshape(self.noa, self.nva)
             xpy_coeff = np.vstack((np.zeros((self.nfc, self.nva)), xpy_coeff))
