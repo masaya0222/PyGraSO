@@ -500,8 +500,7 @@ def test_ch2o_td_soc_molsoc():
     answer = np.array(
         [68.05414 + 0.00024j, -0.01202 + 0.00000, -68.05414 - 0.00024j]
     )  # from pysoc
-    print(soc_s0t1)
-    print(answer)
+
     assert np.allclose(soc_s0t1, answer, atol=1e-3)
 
     soc_s1t1_1 = complex(
