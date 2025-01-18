@@ -3,6 +3,7 @@ import subprocess
 import numpy as np
 
 from parser import gaussian_perser
+from calc_ao_element import calc_ao_element
 
 
 def generate_input_file(
@@ -129,7 +130,7 @@ class numerical_deriv:
                         raise ValueError(f"Error in Gaussian execution: {e}")
 
     def execute_num_deriv(self, property_name):
-        allow_property_names = ["mo_coeff", "xy_coeff", "tdip"]
+        allow_property_names = ["mo_coeff", "xy_coeff", "tdip", "ao_soc"]
         if not (property_name in allow_property_names):
             raise ValueError(f"Can't find {property_name}")
 
@@ -164,6 +165,12 @@ class numerical_deriv:
                             prop = np.hstack((prop[0], prop[1]))
                     if property_name == "tdip":
                         prop = g_parser.get_tdip()
+                    if property_name == "ao_soc":
+                        pert_coords = perturb_coordinates(
+                            self.coordinates, atom_idx, axis_idx, delta
+                        )
+                        ao_calculator = calc_ao_element(self.atoms, pert_coords)
+                        prop = ao_calculator.get_ao_soc()
                     properties.append(prop)
                 grad = five_point_derivative(properties, self.step_size)
                 gradients[atom_idx].append(grad)

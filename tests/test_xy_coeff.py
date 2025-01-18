@@ -1,5 +1,4 @@
 import os
-import sys
 import numpy as np
 
 from parser import gaussian_perser

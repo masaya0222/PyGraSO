@@ -2,31 +2,16 @@ import os
 import sys
 import ctypes
 import numpy as np
-import numpy
+from pathlib import Path
 
 _cint = np.ctypeslib.load_library(
-    "libcint", os.path.abspath(os.path.join(__file__, "/home/hagai/libcint/build"))
+    "libcint",
+    os.path.abspath(
+        os.path.join(Path(__file__).resolve().parent, "../thridparty/libcint/build")
+    ),
 )
+
 from pyscf import gto, lib
-
-
-def make_cintopt(atm, bas, env, intor):
-    c_atm = numpy.asarray(atm, dtype=numpy.int32, order="C")
-    c_bas = numpy.asarray(bas, dtype=numpy.int32, order="C")
-    c_env = numpy.asarray(env, dtype=numpy.double, order="C")
-    natm = c_atm.shape[0]
-    nbas = c_bas.shape[0]
-    cintopt = lib.c_null_ptr()
-    foptinit = getattr(_cint, intor + "_optimizer")
-    foptinit(
-        ctypes.byref(cintopt),
-        c_atm.ctypes.data_as(ctypes.c_void_p),
-        ctypes.c_int(natm),
-        c_bas.ctypes.data_as(ctypes.c_void_p),
-        ctypes.c_int(nbas),
-        c_env.ctypes.data_as(ctypes.c_void_p),
-    )
-    return cintopt
 
 
 class calc_ao_element:
@@ -43,6 +28,7 @@ class calc_ao_element:
         self._ao_dip_deriv = None
 
         self._ao_soc = None
+        self._ao_soc_deriv = None
 
     def setup_mol(self):
         mol = gto.Mole()
@@ -130,43 +116,72 @@ class calc_ao_element:
             raise ValueError(f"Error occur while reading ao_ovlp and ao_soc:{e}")
         return self._ao_soc
 
-    def test(self):
-        # intor_name = "cint1e_nuc_cart"
-        # intor_name = "cint1e_so_cart"
-        intor_name = "cint1e_pnucxp_cart"
-        # intor_name = "cint1e_ia01p_cart"
-        # intor_name = "cint1e_r_cart"
-        intor_name_tmp = "cint1e_nuc_cart"
-        intor_name_tmp = intor_name
-        print(self.mol._bas)
+    def get_ao_soc_deriv(self):
+        if self._ao_soc_deriv is not None:
+            return self._ao_soc_deriv
+        try:
+            intor_name = "cint1e_prinvxpp_cart"
+            fn = getattr(_cint, intor_name)
 
-        fn1 = getattr(_cint, intor_name)
-        for i in range(self.mol.nbas):
-            am_i = self.mol._bas[i, 1]
-            for j in range(self.mol.nbas):
-                ref = self.mol.intor_by_shell(intor_name_tmp, [i, j], comp=3)
-                # buf = np.empty_like(ref)
-                am_j = self.mol._bas[j, 1]
-                buf = np.zeros((3, am_i * 2 + 1, am_j * 2 + 1))
-                # buf = np.empty((3,am_i*2+1,am_j*2+1))
-                fn1(
-                    buf.ctypes.data_as(ctypes.c_void_p),
-                    (ctypes.c_int * 2)(i, j),
-                    self.mol._atm.ctypes.data_as(ctypes.c_void_p),
-                    ctypes.c_int(self.mol.natm),
-                    self.mol._bas.ctypes.data_as(ctypes.c_void_p),
-                    ctypes.c_int(self.mol.nbas),
-                    self.mol._env.ctypes.data_as(ctypes.c_void_p),
-                )
-                print(i, j, buf.shape)
-                print(ref)
-                print(buf)
-        exit()
-        print(f"{self.mol._atm=}")
-        print(f"{self.mol._bas=}")
-        print(f"{self.mol._env=}")
-        self.mol._atm[0, 0] = 1.0
-        self.mol._atm[1, 0] = 1.0
-        tmp = gto.getints(intor_name, self.mol._atm, self.mol._bas, env=self.mol._env)
-        tmp = np.real(tmp)
-        print(tmp)
+            mat = np.zeros(
+                (self.natoms, 3, 3, self.nbasis, self.nbasis)
+            )  # atom, xyz, q, i, j
+            for k in range(self.mol.natm):
+                self.mol.set_rinv_origin(self.mol.atom_coord(k))
+                Z_k = self.mol._atm[k, 0]
+                idx_i = 0
+                for i in range(self.mol.nbas):
+                    am_i = self.mol._bas[i, 1]
+                    idx_j = 0
+                    for j in range(self.mol.nbas):
+                        am_j = self.mol._bas[j, 1]
+                        buf = np.zeros((3, 3, am_j * 2 + 1, am_i * 2 + 1))
+                        fn(
+                            buf.ctypes.data_as(ctypes.c_void_p),
+                            (ctypes.c_int * 2)(i, j),
+                            self.mol._atm.ctypes.data_as(ctypes.c_void_p),
+                            ctypes.c_int(self.mol.natm),
+                            self.mol._bas.ctypes.data_as(ctypes.c_void_p),
+                            ctypes.c_int(self.mol.nbas),
+                            self.mol._env.ctypes.data_as(ctypes.c_void_p),
+                        )
+                        buf = buf.transpose(1, 0, 3, 2)
+                        mat[
+                            k,
+                            :,
+                            :,
+                            idx_i : idx_i + am_i * 2 + 1,
+                            idx_j : idx_j + am_j * 2 + 1,
+                        ] = buf * Z_k
+                        idx_j += am_j * 2 + 1
+                    idx_i += am_i * 2 + 1
+
+            mat = 1.0 * np.real(
+                mat[
+                    np.ix_(
+                        np.arange(self.natoms),
+                        np.arange(3),
+                        np.arange(3),
+                        self.permu_basis,
+                        self.permu_basis,
+                    )
+                ]
+            )  # atom, q, xyz, i, j
+
+            mat_t = -mat.transpose(0, 1, 2, 4, 3)
+            res_l = np.sum(mat_t, axis=0)
+            res_r = np.sum(mat, axis=0)
+            res = mat + mat_t  # atom, q, xyz, i, j
+
+            bas2nuc = []
+            for i in range(self.mol.nbas):
+                bas2nuc.extend([self.mol._bas[i, 0]] * (self.mol._bas[i, 1] * 2 + 1))
+            bas2nuc = np.array(bas2nuc)[self.permu_basis]
+
+            for i, t_i in enumerate(bas2nuc):
+                res[t_i, :, :, i, :] -= res_l[:, :, i, :]
+                res[t_i, :, :, :, i] -= res_r[:, :, :, i]
+            self._ao_soc_deriv = res
+        except Exception as e:
+            raise ValueError(f"Error occur while reading ao_ovlp and ao_soc_deriv:{e}")
+        return self._ao_soc_deriv
