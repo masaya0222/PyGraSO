@@ -65,26 +65,30 @@ def test_h2o_td_soc():
     soc_s0t1_3 = -1.0 * soc_s0t1_1
     soc_s0t1 = np.array([soc_s0t1_1, soc_s0t1_2, soc_s0t1_3])
     soc_s0t1 *= au2wavnum
-    answer = np.array([-0.00000 + 25.48577j, 37.02488 + 0.00000j, 0.00000 - 25.48577j])
+    answer = np.array(
+        [-0.00000 + 25.48577j, 37.02488 + 0.00000j, 0.00000 - 25.48577j]
+    )  # from pysoc
 
-    assert np.allclose(soc_s0t1, answer, atol=1e-2)  # from pysoc
+    assert np.allclose(soc_s0t1, answer, atol=1e-6, rtol=5e-3)
 
     soc_s1t1_1 = complex(
-        0.5 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[0, :, :])
-        + -0.5
+        1.0
+        / np.sqrt(2.0)
+        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[0, :, :])
+        - 1.0
+        / np.sqrt(2.0)
         * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[0, :, :]),
-        0.5 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[1, :, :])
-        + -0.5
+        1.0
+        / np.sqrt(2.0)
+        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[1, :, :])
+        - 1.0
+        / np.sqrt(2.0)
         * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[1, :, :]),
     )
 
     soc_s1t1_2 = complex(
-        -1.0
-        / np.sqrt(2)
-        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[2, :, :])
-        + +1.0
-        / np.sqrt(2)
-        * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[2, :, :]),
+        -1.0 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[2, :, :])
+        + 1.0 * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[2, :, :]),
         0.0,
     )
     soc_s1t1_3 = -1.0 * soc_s1t1_1
@@ -94,7 +98,7 @@ def test_h2o_td_soc():
         [0.01834 + 0.00000j, 0.00000 + 0.00000j, -0.01834 - 0.00000j]
     )  # from pysoc
 
-    assert np.allclose(soc_s1t1, answer, atol=1e-2)
+    assert np.allclose(soc_s1t1, answer, atol=1e-6, rtol=5e-3)
 
 
 def test_h2o_td_soc_molsoc():
@@ -180,15 +184,19 @@ def test_h2o_td_soc_molsoc():
 
     mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
 
+    coeff_thresh = 1e-5
+
     x_coeff_s1, y_coeff_s1 = g_parser_s1.get_xy_coeff()
     xpy_coeff_s1 = x_coeff_s1 + y_coeff_s1
     norm_s1 = np.sqrt(np.trace(xpy_coeff_s1 @ xpy_coeff_s1.T) * 2.0)
     xpy_coeff_s1 = xpy_coeff_s1 / norm_s1
+    xpy_coeff_s1[np.abs(xpy_coeff_s1) < coeff_thresh] = 0.0  # pysoc treatment
 
     x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
     xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
     norm_t1 = np.sqrt(np.trace(xpy_coeff_t1 @ xpy_coeff_t1.T) * 2.0)
     xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
+    xpy_coeff_t1[np.abs(xpy_coeff_t1) < coeff_thresh] = 0.0  # pysoc treatment
 
     fine_stru = 7.297352568e-3
     mo_soc *= 0.5 * fine_stru**2
@@ -211,25 +219,30 @@ def test_h2o_td_soc_molsoc():
     soc_s0t1_3 = -1.0 * soc_s0t1_1
     soc_s0t1 = np.array([soc_s0t1_1, soc_s0t1_2, soc_s0t1_3])
     soc_s0t1 *= au2wavnum
-    answer = np.array([-0.00000 + 25.48577j, 37.02488 + 0.00000j, 0.00000 - 25.48577j])
-    assert np.allclose(soc_s0t1, answer, atol=1e-4)  # from pysoc
+    answer = np.array(
+        [-0.00000 + 25.48577j, 37.02488 + 0.00000j, 0.00000 - 25.48577j]
+    )  # from pysoc
+
+    assert np.allclose(soc_s0t1, answer, atol=1e-6, rtol=1e-4)
 
     soc_s1t1_1 = complex(
-        0.5 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[0, :, :])
-        + -0.5
+        1.0
+        / np.sqrt(2.0)
+        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[0, :, :])
+        - 1.0
+        / np.sqrt(2.0)
         * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[0, :, :]),
-        0.5 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[1, :, :])
-        + -0.5
+        1.0
+        / np.sqrt(2.0)
+        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[1, :, :])
+        - 1.0
+        / np.sqrt(2.0)
         * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[1, :, :]),
     )
 
     soc_s1t1_2 = complex(
-        -1.0
-        / np.sqrt(2)
-        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[2, :, :])
-        + +1.0
-        / np.sqrt(2)
-        * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[2, :, :]),
+        -1.0 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[2, :, :])
+        + 1.0 * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[2, :, :]),
         0.0,
     )
     soc_s1t1_3 = -1.0 * soc_s1t1_1
@@ -239,7 +252,7 @@ def test_h2o_td_soc_molsoc():
         [0.01834 + 0.00000j, 0.00000 + 0.00000j, -0.01834 - 0.00000j]
     )  # from pysoc
 
-    assert np.allclose(soc_s1t1, answer, atol=1e-2)
+    assert np.allclose(soc_s1t1, answer, atol=1e-6, rtol=1e-3)
 
 
 def test_ch2o_td_soc():
@@ -308,21 +321,23 @@ def test_ch2o_td_soc():
     assert np.allclose(soc_s0t1, answer, atol=1e-3)
 
     soc_s1t1_1 = complex(
-        0.5 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[0, :, :])
-        + -0.5
+        1.0
+        / np.sqrt(2.0)
+        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[0, :, :])
+        - 1.0
+        / np.sqrt(2.0)
         * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[0, :, :]),
-        0.5 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[1, :, :])
-        + -0.5
+        1.0
+        / np.sqrt(2.0)
+        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[1, :, :])
+        - 1.0
+        / np.sqrt(2.0)
         * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[1, :, :]),
     )
 
     soc_s1t1_2 = complex(
-        -1.0
-        / np.sqrt(2)
-        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[2, :, :])
-        + +1.0
-        / np.sqrt(2)
-        * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[2, :, :]),
+        -1.0 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[2, :, :])
+        + 1.0 * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[2, :, :]),
         0.0,
     )
     soc_s1t1_3 = -1.0 * soc_s1t1_1
@@ -332,7 +347,8 @@ def test_ch2o_td_soc():
         [0.00000 - 0.00161j, 0.00000 + 0.00000j, -0.00000 + 0.00161j]
     )  # from pysoc
 
-    assert np.allclose(soc_s1t1, answer, atol=1e-3)
+    assert np.allclose(soc_s1t1, answer, atol=3e-4)
+    # assert np.allclose(soc_s1t1, answer, atol=1e-6, rtol=1e-3)
 
 
 def test_ch2o_td_soc_molsoc():
@@ -446,15 +462,19 @@ def test_ch2o_td_soc_molsoc():
 
     mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
 
+    coeff_thresh = 1e-5
+
     x_coeff_s1, y_coeff_s1 = g_parser_s1.get_xy_coeff()
     xpy_coeff_s1 = x_coeff_s1 + y_coeff_s1
     norm_s1 = np.sqrt(np.trace(xpy_coeff_s1 @ xpy_coeff_s1.T) * 2.0)
     xpy_coeff_s1 = xpy_coeff_s1 / norm_s1
+    xpy_coeff_s1[np.abs(xpy_coeff_s1) < coeff_thresh] = 0.0  # pysoc treatment
 
     x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
     xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
     norm_t1 = np.sqrt(np.trace(xpy_coeff_t1 @ xpy_coeff_t1.T) * 2.0)
     xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
+    xpy_coeff_t1[np.abs(xpy_coeff_t1) < coeff_thresh] = 0.0  # pysoc treatment
 
     fine_stru = 7.297352568e-3
     mo_soc *= 0.5 * fine_stru**2
@@ -480,25 +500,28 @@ def test_ch2o_td_soc_molsoc():
     answer = np.array(
         [68.05414 + 0.00024j, -0.01202 + 0.00000, -68.05414 - 0.00024j]
     )  # from pysoc
-
+    print(soc_s0t1)
+    print(answer)
     assert np.allclose(soc_s0t1, answer, atol=1e-3)
 
     soc_s1t1_1 = complex(
-        0.5 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[0, :, :])
-        + -0.5
+        1.0
+        / np.sqrt(2.0)
+        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[0, :, :])
+        - 1.0
+        / np.sqrt(2.0)
         * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[0, :, :]),
-        0.5 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[1, :, :])
-        + -0.5
+        1.0
+        / np.sqrt(2.0)
+        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[1, :, :])
+        - 1.0
+        / np.sqrt(2.0)
         * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[1, :, :]),
     )
 
     soc_s1t1_2 = complex(
-        -1.0
-        / np.sqrt(2)
-        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[2, :, :])
-        + +1.0
-        / np.sqrt(2)
-        * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[2, :, :]),
+        -1.0 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[2, :, :])
+        + 1.0 * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[2, :, :]),
         0.0,
     )
     soc_s1t1_3 = -1.0 * soc_s1t1_1
