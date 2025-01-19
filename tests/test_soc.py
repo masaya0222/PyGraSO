@@ -45,14 +45,14 @@ def test_h2o_td_soc():
 
     fine_stru = 7.297352568e-3
     mo_soc *= 0.5 * fine_stru**2
-    mo_soc_ij = mo_soc[:, : g_parser_t1.nfc + g_parser_t1.noa, :][
-        :, :, : g_parser_t1.nfc + g_parser_t1.noa
+    mo_soc_ij = mo_soc[
+        :, : g_parser_t1.nfc + g_parser_t1.noa, : g_parser_t1.nfc + g_parser_t1.noa
     ]
-    mo_soc_ia = mo_soc[:, : g_parser_t1.nfc + g_parser_t1.noa, :][
-        :, :, g_parser_t1.nfc + g_parser_t1.noa :
+    mo_soc_ia = mo_soc[
+        :, : g_parser_t1.nfc + g_parser_t1.noa, g_parser_t1.nfc + g_parser_t1.noa :
     ]
-    mo_soc_ab = mo_soc[:, g_parser_t1.nfc + g_parser_t1.noa :, :][
-        :, :, g_parser_t1.nfc + g_parser_t1.noa :
+    mo_soc_ab = mo_soc[
+        :, g_parser_t1.nfc + g_parser_t1.noa :, g_parser_t1.nfc + g_parser_t1.noa :
     ]
 
     au2wavnum = 219474.6
@@ -199,14 +199,14 @@ def test_h2o_td_soc_molsoc():
 
     fine_stru = 7.297352568e-3
     mo_soc *= 0.5 * fine_stru**2
-    mo_soc_ij = mo_soc[:, : g_parser_t1.nfc + g_parser_t1.noa, :][
-        :, :, : g_parser_t1.nfc + g_parser_t1.noa
+    mo_soc_ij = mo_soc[
+        :, : g_parser_t1.nfc + g_parser_t1.noa, : g_parser_t1.nfc + g_parser_t1.noa
     ]
-    mo_soc_ia = mo_soc[:, : g_parser_t1.nfc + g_parser_t1.noa, :][
-        :, :, g_parser_t1.nfc + g_parser_t1.noa :
+    mo_soc_ia = mo_soc[
+        :, : g_parser_t1.nfc + g_parser_t1.noa, g_parser_t1.nfc + g_parser_t1.noa :
     ]
-    mo_soc_ab = mo_soc[:, g_parser_t1.nfc + g_parser_t1.noa :, :][
-        :, :, g_parser_t1.nfc + g_parser_t1.noa :
+    mo_soc_ab = mo_soc[
+        :, g_parser_t1.nfc + g_parser_t1.noa :, g_parser_t1.nfc + g_parser_t1.noa :
     ]
 
     au2wavnum = 219474.6
@@ -294,14 +294,14 @@ def test_ch2o_td_soc():
 
     fine_stru = 7.297352568e-3
     mo_soc *= 0.5 * fine_stru**2
-    mo_soc_ij = mo_soc[:, : g_parser_t1.nfc + g_parser_t1.noa, :][
-        :, :, : g_parser_t1.nfc + g_parser_t1.noa
+    mo_soc_ij = mo_soc[
+        :, : g_parser_t1.nfc + g_parser_t1.noa, : g_parser_t1.nfc + g_parser_t1.noa
     ]
-    mo_soc_ia = mo_soc[:, : g_parser_t1.nfc + g_parser_t1.noa, :][
-        :, :, g_parser_t1.nfc + g_parser_t1.noa :
+    mo_soc_ia = mo_soc[
+        :, : g_parser_t1.nfc + g_parser_t1.noa, g_parser_t1.nfc + g_parser_t1.noa :
     ]
-    mo_soc_ab = mo_soc[:, g_parser_t1.nfc + g_parser_t1.noa :, :][
-        :, :, g_parser_t1.nfc + g_parser_t1.noa :
+    mo_soc_ab = mo_soc[
+        :, g_parser_t1.nfc + g_parser_t1.noa :, g_parser_t1.nfc + g_parser_t1.noa :
     ]
 
     au2wavnum = 219474.6
@@ -477,14 +477,14 @@ def test_ch2o_td_soc_molsoc():
 
     fine_stru = 7.297352568e-3
     mo_soc *= 0.5 * fine_stru**2
-    mo_soc_ij = mo_soc[:, : g_parser_t1.nfc + g_parser_t1.noa, :][
-        :, :, : g_parser_t1.nfc + g_parser_t1.noa
+    mo_soc_ij = mo_soc[
+        :, : g_parser_t1.nfc + g_parser_t1.noa, : g_parser_t1.nfc + g_parser_t1.noa
     ]
-    mo_soc_ia = mo_soc[:, : g_parser_t1.nfc + g_parser_t1.noa, :][
-        :, :, g_parser_t1.nfc + g_parser_t1.noa :
+    mo_soc_ia = mo_soc[
+        :, : g_parser_t1.nfc + g_parser_t1.noa, g_parser_t1.nfc + g_parser_t1.noa :
     ]
-    mo_soc_ab = mo_soc[:, g_parser_t1.nfc + g_parser_t1.noa :, :][
-        :, :, g_parser_t1.nfc + g_parser_t1.noa :
+    mo_soc_ab = mo_soc[
+        :, g_parser_t1.nfc + g_parser_t1.noa :, g_parser_t1.nfc + g_parser_t1.noa :
     ]
 
     au2wavnum = 219474.6

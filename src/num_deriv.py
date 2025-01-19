@@ -4,6 +4,7 @@ import numpy as np
 
 from parser import gaussian_perser
 from calc_ao_element import calc_ao_element
+from calc_soc import calc_soc_s0t1, calc_soc_s1t1
 
 
 def generate_input_file(
@@ -11,6 +12,7 @@ def generate_input_file(
     atoms,
     coordinates,
     mol_name,
+    do_triplet=False,
     calc_type="td",
     functional="PBE1PBE",
     basis="6-31G",
@@ -22,7 +24,11 @@ def generate_input_file(
             guess = "Guess=Read"
         else:
             guess = ""
-        root = f"#p {calc_type}(nstates=6,root=1,conver=6) {guess} {functional}/{basis} 6D 10F nosymm GFInput scf=tight"
+        if do_triplet:
+            triplet = "Triplet,"
+        else:
+            triplet = ""
+        root = f"#p {calc_type}({triplet}nstates=6,root=1,conver=6) {guess} {functional}/{basis} 6D 10F nosymm GFInput scf=tight"
         f.write(f"""%Chk={mol_name}.chk
 %Mem=2GB
 %rwf={mol_name}.rwf
@@ -79,7 +85,7 @@ class numerical_deriv:
         coordinates,
         step_size=0.001,
         calc_dir="num",
-        calc_type="tda",
+        calc_type="td",
     ):
         self.mol_name = mol_name
         self.atoms = atoms
@@ -101,36 +107,76 @@ class numerical_deriv:
         for axis_idx, axis in enumerate(axes):
             for atom_idx in range(self.natoms):
                 for delta in delta_list:
-                    pert_mol_name = os.path.join(
+                    pert_mol_name_s1 = os.path.join(
                         self.calc_dir,
-                        f"{self.mol_name}_{axis}_atom{atom_idx:03d}_delta{delta:+.4f}",
+                        f"{self.mol_name}_s1_{axis}_atom{atom_idx:03d}_delta{delta:+.4f}",
                     )
-                    pert_inp_file_name = f"{pert_mol_name}.gjf"
-                    pert_log_file_name = f"{pert_mol_name}.log"
-                    pert_rwf_file_name = f"{pert_mol_name}.rwf"
+                    pert_s1_inp_file_name = f"{pert_mol_name_s1}.gjf"
+                    pert_s1_log_file_name = f"{pert_mol_name_s1}.log"
+                    pert_s1_rwf_file_name = f"{pert_mol_name_s1}.rwf"
                     if (
-                        os.path.isfile(pert_inp_file_name)
-                        and os.path.isfile(pert_log_file_name)
-                        and os.path.isfile(pert_rwf_file_name)
+                        os.path.isfile(pert_s1_inp_file_name)
+                        and os.path.isfile(pert_s1_log_file_name)
+                        and os.path.isfile(pert_s1_rwf_file_name)
                     ):
                         continue
                     pert_coords = perturb_coordinates(
                         self.coordinates, atom_idx, axis_idx, delta
                     )
                     generate_input_file(
-                        pert_inp_file_name,
+                        pert_s1_inp_file_name,
                         self.atoms,
                         pert_coords,
-                        pert_mol_name,
+                        pert_mol_name_s1,
+                        do_triplet=False,
                         calc_type=self.calc_type,
                     )
                     try:
-                        subprocess.run(["g16", pert_inp_file_name], check=True)
+                        subprocess.run(["g16", pert_s1_inp_file_name], check=True)
                     except subprocess.CalledProcessError as e:
                         raise ValueError(f"Error in Gaussian execution: {e}")
 
-    def execute_num_deriv(self, property_name):
-        allow_property_names = ["mo_coeff", "xy_coeff", "tdip", "ao_soc"]
+        for axis_idx, axis in enumerate(axes):
+            for atom_idx in range(self.natoms):
+                for delta in delta_list:
+                    pert_mol_name_t1 = os.path.join(
+                        self.calc_dir,
+                        f"{self.mol_name}_t1_{axis}_atom{atom_idx:03d}_delta{delta:+.4f}",
+                    )
+                    pert_t1_inp_file_name = f"{pert_mol_name_t1}.gjf"
+                    pert_t1_log_file_name = f"{pert_mol_name_t1}.log"
+                    pert_t1_rwf_file_name = f"{pert_mol_name_t1}.rwf"
+                    if (
+                        os.path.isfile(pert_t1_inp_file_name)
+                        and os.path.isfile(pert_t1_log_file_name)
+                        and os.path.isfile(pert_t1_rwf_file_name)
+                    ):
+                        continue
+                    pert_coords = perturb_coordinates(
+                        self.coordinates, atom_idx, axis_idx, delta
+                    )
+                    generate_input_file(
+                        pert_t1_inp_file_name,
+                        self.atoms,
+                        pert_coords,
+                        pert_mol_name_t1,
+                        do_triplet=True,
+                        calc_type=self.calc_type,
+                    )
+                    try:
+                        subprocess.run(["g16", pert_t1_inp_file_name], check=True)
+                    except subprocess.CalledProcessError as e:
+                        raise ValueError(f"Error in Gaussian execution: {e}")
+
+    def execute_num_deriv(self, property_name, target_state="s1"):
+        allow_property_names = [
+            "mo_coeff",
+            "xy_coeff",
+            "tdip",
+            "ao_soc",
+            "soc_s0t1",
+            "soc_s1t1",
+        ]
         if not (property_name in allow_property_names):
             raise ValueError(f"Can't find {property_name}")
 
@@ -149,13 +195,16 @@ class numerical_deriv:
                 for delta in delta_list:
                     pert_mol_name = os.path.join(
                         self.calc_dir,
-                        f"{self.mol_name}_{axis}_atom{atom_idx:03d}_delta{delta:+.4f}",
+                        f"{self.mol_name}_{target_state}_{axis}_atom{atom_idx:03d}_delta{delta:+.4f}",
                     )
                     pert_inp_file_name = f"{pert_mol_name}.gjf"
                     pert_log_file_name = f"{pert_mol_name}.log"
                     pert_rwf_file_name = f"{pert_mol_name}.rwf"
 
                     g_parser = gaussian_perser(pert_log_file_name, pert_rwf_file_name)
+                    pert_coords = perturb_coordinates(
+                        self.coordinates, atom_idx, axis_idx, delta
+                    )
                     if property_name == "mo_coeff":
                         prop = g_parser.get_mo_coeff()
                     if property_name == "xy_coeff":
@@ -166,11 +215,46 @@ class numerical_deriv:
                     if property_name == "tdip":
                         prop = g_parser.get_tdip()
                     if property_name == "ao_soc":
-                        pert_coords = perturb_coordinates(
-                            self.coordinates, atom_idx, axis_idx, delta
-                        )
                         ao_calculator = calc_ao_element(self.atoms, pert_coords)
                         prop = ao_calculator.get_ao_soc()
+                    if property_name == "soc_s0t1":
+                        pert_mol_name_t1 = os.path.join(
+                            self.calc_dir,
+                            f"{self.mol_name}_t1_{axis}_atom{atom_idx:03d}_delta{delta:+.4f}",
+                        )
+                        pert_t1_inp_file_name = f"{pert_mol_name_t1}.gjf"
+                        pert_t1_log_file_name = f"{pert_mol_name_t1}.log"
+                        pert_t1_rwf_file_name = f"{pert_mol_name_t1}.rwf"
+                        prop = calc_soc_s0t1(
+                            self.atoms,
+                            pert_coords,
+                            pert_t1_log_file_name,
+                            pert_t1_rwf_file_name,
+                        )
+                    if property_name == "soc_s1t1":
+                        pert_mol_name_t1 = os.path.join(
+                            self.calc_dir,
+                            f"{self.mol_name}_t1_{axis}_atom{atom_idx:03d}_delta{delta:+.4f}",
+                        )
+                        pert_t1_inp_file_name = f"{pert_mol_name_t1}.gjf"
+                        pert_t1_log_file_name = f"{pert_mol_name_t1}.log"
+                        pert_t1_rwf_file_name = f"{pert_mol_name_t1}.rwf"
+
+                        pert_mol_name_s1 = os.path.join(
+                            self.calc_dir,
+                            f"{self.mol_name}_s1_{axis}_atom{atom_idx:03d}_delta{delta:+.4f}",
+                        )
+                        pert_s1_inp_file_name = f"{pert_mol_name_s1}.gjf"
+                        pert_s1_log_file_name = f"{pert_mol_name_s1}.log"
+                        pert_s1_rwf_file_name = f"{pert_mol_name_s1}.rwf"
+                        prop = calc_soc_s1t1(
+                            self.atoms,
+                            pert_coords,
+                            pert_s1_log_file_name,
+                            pert_s1_rwf_file_name,
+                            pert_t1_log_file_name,
+                            pert_t1_rwf_file_name,
+                        )
                     properties.append(prop)
                 grad = five_point_derivative(properties, self.step_size)
                 gradients[atom_idx].append(grad)
