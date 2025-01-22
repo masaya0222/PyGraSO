@@ -86,10 +86,12 @@ class numerical_deriv:
         step_size=0.001,
         calc_dir="num",
         calc_type="td",
+        basis="6-31G",
     ):
         self.mol_name = mol_name
         self.atoms = atoms
         self.coordinates = coordinates
+        self.basis = basis
         self.natoms = len(atoms)
         self.step_size = step_size
         self.calc_dir = calc_dir
@@ -130,6 +132,7 @@ class numerical_deriv:
                         pert_mol_name_s1,
                         do_triplet=False,
                         calc_type=self.calc_type,
+                        basis=self.basis,
                     )
                     try:
                         subprocess.run(["g16", pert_s1_inp_file_name], check=True)
@@ -162,6 +165,7 @@ class numerical_deriv:
                         pert_mol_name_t1,
                         do_triplet=True,
                         calc_type=self.calc_type,
+                        basis=self.basis,
                     )
                     try:
                         subprocess.run(["g16", pert_t1_inp_file_name], check=True)
@@ -215,7 +219,9 @@ class numerical_deriv:
                     if property_name == "tdip":
                         prop = g_parser.get_tdip()
                     if property_name == "ao_soc":
-                        ao_calculator = calc_ao_element(self.atoms, pert_coords)
+                        ao_calculator = calc_ao_element(
+                            self.atoms, pert_coords, basis=self.basis
+                        )
                         prop = ao_calculator.get_ao_soc()
                     if property_name == "soc_s0t1":
                         pert_mol_name_t1 = os.path.join(
@@ -230,6 +236,7 @@ class numerical_deriv:
                             pert_coords,
                             pert_t1_log_file_name,
                             pert_t1_rwf_file_name,
+                            basis=self.basis,
                         )
                     if property_name == "soc_s1t1":
                         pert_mol_name_t1 = os.path.join(
@@ -254,6 +261,7 @@ class numerical_deriv:
                             pert_s1_rwf_file_name,
                             pert_t1_log_file_name,
                             pert_t1_rwf_file_name,
+                            basis=self.basis,
                         )
                     properties.append(prop)
                 grad = five_point_derivative(properties, self.step_size)

@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 import subprocess
 import numpy as np
+import periodictable
 
 
 def flatten_to_symmetric(flat_array, nbasis):
@@ -35,6 +36,19 @@ def read_block(lines, start, nrow, ncol):
             tmp1.append(
                 [float(s.replace("D", "E")) for s in lines[start + k].split()[1:]]
             )
+        tmp1 = np.array(tmp1).T
+        tmp.extend(tmp1)
+        start += nrow + 1
+    tmp = np.array(tmp).T
+    return tmp
+
+
+def read_block2(lines, start, nrow, ncol):
+    tmp = []
+    for j in range((ncol + 4) // 5):
+        tmp1 = []
+        for k in range(nrow):
+            tmp1.append([float(s.replace("D", "E")) for s in lines[start + k].split()])
         tmp1 = np.array(tmp1).T
         tmp.extend(tmp1)
         start += nrow + 1
@@ -134,6 +148,55 @@ class gaussian_perser:
         elif len([line for line in lines if line.startswith(rpa_key)]):
             nxy = 2
         return natoms, nbasis, nfc, norb, noa, nva, basis_idx, nxy
+
+    def read_basis(self):
+        with open(self.log_file_name, mode="r") as f:
+            lines = [line.strip() for line in f.readlines()]
+        atoms_key = "Center     Atomic      Atomic             Coordinates (Angstroms)"
+        atoms_key_line = [
+            i for i, line in enumerate(lines) if line.startswith(atoms_key)
+        ][0] + 3
+        atoms_num = [
+            int(line.split()[1])
+            for line in lines[atoms_key_line : atoms_key_line + self.natoms]
+        ]
+        atoms_symbol = [
+            periodictable.elements[atom_num].symbol for atom_num in atoms_num
+        ]
+
+        start_line = [
+            i for i, line in enumerate(lines) if line.startswith("AO basis set")
+        ][0]
+        pattern = r"\s*(\d+)\s*basis functions,\s*(\d+)\s*primitive gaussians,\s*(\d+)\s*cartesian basis functions"
+        end_line = [i for i, line in enumerate(lines) if re.match(pattern, line)][0] - 1
+        tmp_line = [start_line] + [
+            start_line + i
+            for i, line in enumerate(lines[start_line:end_line])
+            if line.startswith("****")
+        ]
+
+        assert len(tmp_line) - 1 == self.natoms, "number of basis doesn't match "
+        basis_line = [(tmp_line[i] + 1, tmp_line[i + 1]) for i in range(self.natoms)]
+        basis = dict()
+        angular_sym2num = {"S": 0, "P": 1, "D": 2, "F": 3}
+        for i in range(self.natoms):
+            if atoms_symbol[i] in basis:
+                continue
+            basis[atoms_symbol[i]] = []
+            now_line = basis_line[i][0] + 1
+            while now_line < basis_line[i][1]:
+                tmp = lines[now_line].split()
+                angular, nctr = tmp[0], int(tmp[1])
+                if len(angular) == 1:
+                    angular_num = angular_sym2num[angular]
+                    coeff = read_block2(lines, now_line + 1, nctr, 2)
+                    basis[atoms_symbol[i]].append([angular_num] + coeff.tolist())
+                elif angular == "SP":
+                    coeff = read_block2(lines, now_line + 1, nctr, 3)
+                    basis[atoms_symbol[i]].append([0] + coeff[:, [0, 1]].tolist())
+                    basis[atoms_symbol[i]].append([1] + coeff[:, [0, 2]].tolist())
+                now_line += 1 + nctr
+        return basis
 
     def get_mo_coeff(self):
         if self._mo_coeff is not None:

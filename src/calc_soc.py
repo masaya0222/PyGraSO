@@ -9,7 +9,12 @@ coeff_thresh = 1e-5
 
 
 def calc_soc_s0t1(
-    atoms, coordinates, t1_log_file_name, t1_rwf_file_name, normalize=True
+    atoms,
+    coordinates,
+    t1_log_file_name,
+    t1_rwf_file_name,
+    normalize=True,
+    basis="6-31G",
 ):
     g_parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
     mo_coeff = g_parser_t1.get_mo_coeff()
@@ -20,7 +25,7 @@ def calc_soc_s0t1(
         xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
     # xpy_coeff_t1[np.abs(xpy_coeff_t1) < coeff_thresh] = 0.0
 
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=basis)
     ao_soc = ao_calculator.get_ao_soc()
     mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
 
@@ -55,6 +60,7 @@ def calc_soc_s1t1(
     t1_log_file_name,
     t1_rwf_file_name,
     normalize=True,
+    basis="6-31G",
 ):
     g_parser_s1 = gaussian_perser(s1_log_file_name, s1_rwf_file_name)
     mo_coeff = g_parser_s1.get_mo_coeff()
@@ -73,7 +79,7 @@ def calc_soc_s1t1(
         xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
     # xpy_coeff_t1[np.abs(xpy_coeff_t1) < coeff_thresh] = 0.0
 
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=basis)
     ao_soc = ao_calculator.get_ao_soc()
     mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
 
@@ -116,7 +122,12 @@ def calc_soc_s1t1(
 
 
 def calc_soc_s0t1_deriv(
-    atoms, coordinates, t1_log_file_name, t1_rwf_file_name, normalize=True
+    atoms,
+    coordinates,
+    t1_log_file_name,
+    t1_rwf_file_name,
+    normalize=True,
+    basis="6-31G",
 ):
     g_parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
     mo_coeff = g_parser_t1.get_mo_coeff()
@@ -145,7 +156,7 @@ def calc_soc_s0t1_deriv(
             )
         ) / norm_t1
 
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=basis)
     ao_soc = ao_calculator.get_ao_soc()
     ao_soc_deriv = ao_calculator.get_ao_soc_deriv()
 
@@ -221,6 +232,7 @@ def calc_soc_s1t1_deriv(
     t1_log_file_name,
     t1_rwf_file_name,
     normalize=True,
+    basis="6-31G",
 ):
     g_parser_s1 = gaussian_perser(s1_log_file_name, s1_rwf_file_name)
     mo_coeff = g_parser_s1.get_mo_coeff()
@@ -267,7 +279,7 @@ def calc_soc_s1t1_deriv(
             )
         ) / norm_t1
 
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=basis)
     ao_soc = ao_calculator.get_ao_soc()
     ao_soc_deriv = ao_calculator.get_ao_soc_deriv()
 

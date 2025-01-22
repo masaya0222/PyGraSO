@@ -254,6 +254,100 @@ def test_h2o_td_soc_molsoc():
     assert np.allclose(soc_s1t1, answer, atol=1e-6, rtol=1e-3)
 
 
+def test_h2o_d_td_soc():
+    atoms = ["O", "H", "H"]
+    coordinates = [
+        [0.000000, 0.000000, 0.000000],
+        [0.000000, 0.000000, 0.957200],
+        [0.000000, 0.757160, -0.478600],
+    ]
+
+    current_dir = os.path.dirname(__file__)
+    mol_name = "h2o_d_td_s1"
+    log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}.log")
+    rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}.rwf")
+
+    g_parser_s1 = gaussian_perser(log_file_name, rwf_file_name)
+
+    mol_name = "h2o_d_td_t1"
+    log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}.log")
+    rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}.rwf")
+
+    g_parser_t1 = gaussian_perser(log_file_name, rwf_file_name)
+
+    mo_coeff = g_parser_s1.get_mo_coeff()
+
+    ao_calculator = calc_ao_element(atoms, coordinates, basis="6-31G(d)")
+    ao_soc = ao_calculator.get_ao_soc()
+    mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
+
+    x_coeff_s1, y_coeff_s1 = g_parser_s1.get_xy_coeff()
+    xpy_coeff_s1 = x_coeff_s1 + y_coeff_s1
+    norm_s1 = np.sqrt(np.trace(xpy_coeff_s1 @ xpy_coeff_s1.T) * 2.0)
+    xpy_coeff_s1 = xpy_coeff_s1 / norm_s1
+
+    x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
+    xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
+    norm_t1 = np.sqrt(np.trace(xpy_coeff_t1 @ xpy_coeff_t1.T) * 2.0)
+    xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
+
+    fine_stru = 7.297352568e-3
+    mo_soc *= 0.5 * fine_stru**2
+    mo_soc_ij = mo_soc[
+        :, : g_parser_t1.nfc + g_parser_t1.noa, : g_parser_t1.nfc + g_parser_t1.noa
+    ]
+    mo_soc_ia = mo_soc[
+        :, : g_parser_t1.nfc + g_parser_t1.noa, g_parser_t1.nfc + g_parser_t1.noa :
+    ]
+    mo_soc_ab = mo_soc[
+        :, g_parser_t1.nfc + g_parser_t1.noa :, g_parser_t1.nfc + g_parser_t1.noa :
+    ]
+
+    au2wavnum = 219474.6
+    soc_s0t1_1 = (1.0 / np.sqrt(2)) * complex(
+        -np.einsum("ia,ia->", xpy_coeff_t1, mo_soc_ia[0, :, :]),
+        -np.einsum("ia,ia->", xpy_coeff_t1, mo_soc_ia[1, :, :]),
+    )
+    soc_s0t1_2 = complex(np.einsum("ia,ia->", xpy_coeff_t1, mo_soc_ia[2, :, :]), 0.0)
+    soc_s0t1_3 = -1.0 * soc_s0t1_1
+    soc_s0t1 = np.array([soc_s0t1_1, soc_s0t1_2, soc_s0t1_3])
+    soc_s0t1 *= au2wavnum
+    answer = np.array(
+        [0.00000 + 25.15476j, 35.63319 + 0.00000j, 0.00000 - 25.15476j]
+    )  # from pysoc
+
+    assert np.allclose(soc_s0t1, answer, atol=1e-6, rtol=5e-3)
+
+    soc_s1t1_1 = complex(
+        1.0
+        / np.sqrt(2.0)
+        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[0, :, :])
+        - 1.0
+        / np.sqrt(2.0)
+        * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[0, :, :]),
+        1.0
+        / np.sqrt(2.0)
+        * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[1, :, :])
+        - 1.0
+        / np.sqrt(2.0)
+        * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[1, :, :]),
+    )
+
+    soc_s1t1_2 = complex(
+        -1.0 * np.einsum("ia,ja,ji->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij[2, :, :])
+        + 1.0 * np.einsum("ia,ib,ab->", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab[2, :, :]),
+        0.0,
+    )
+    soc_s1t1_3 = -1.0 * soc_s1t1_1
+    soc_s1t1 = np.array([soc_s1t1_1, soc_s1t1_2, soc_s1t1_3])
+    soc_s1t1 *= au2wavnum
+    answer = np.array(
+        [0.03615 + 0.00000j, 0.00000 + 0.00000j, -0.03615 - 0.00000j]
+    )  # from pysoc
+
+    assert np.allclose(soc_s1t1, answer, atol=1e-6, rtol=5e-3)
+
+
 def test_ch2o_td_soc():
     atoms = ["C", "O", "H", "H"]
     coordinates = [

@@ -1,0 +1,13 @@
+%Chk=h2o_d_td_t1.chk
+%Mem=2GB
+%rwf=h2o_d_td_t1.rwf
+%NProcShared=32
+#p td(Triplet,nstates=3,root=1,conver=6) freq PBE1PBE/6-31G(d) 6D 10F nosymm GFInput scf=tight IOP(10/33=4,10/95=9)
+
+title
+
+0 1
+O 0.000000 0.000000 0.000000
+H 0.000000 0.000000 0.957200
+H 0.000000 0.757160 -0.478600
+

@@ -24,6 +24,10 @@ class calc_ao_element:
         self.nbasis = len(self.permu_basis)
         self.natoms = len(atoms)
 
+        self._ao_ovlp = None
+        self._ao_norm = None
+        self.get_ao_ovlp()
+
         self._ao_dip = None
         self._ao_dip_deriv = None
 
@@ -45,7 +49,18 @@ class calc_ao_element:
     def setup_permu(self):
         permu_tmp = []
         basis_idx = []
-        angular2num = {"s": "0", "px": "1", "py": "2", "pz": "3"}
+        angular2num = {
+            "s": "0",
+            "px": "1",
+            "py": "2",
+            "pz": "3",
+            "dxx": "4",
+            "dyy": "5",
+            "dzz": "6",
+            "dxy": "7",
+            "dxz": "8",
+            "dyz": "9",
+        }
         for i, ao_label in enumerate(self.mol.ao_labels()):
             atom_idx, atom_symbol, orb_type = ao_label.split()
             for angular_symbol in angular2num.keys():
@@ -58,6 +73,22 @@ class calc_ao_element:
         permu = np.array([j for (i, j) in sorted(permu_tmp)])
         return permu, basis_idx
 
+    def get_ao_ovlp(self):
+        if self._ao_ovlp is not None:
+            return self._ao_ovlp
+        try:
+            intor_name = "int1e_ovlp_cart"
+            ao_ovlp_tmp = gto.getints(
+                intor_name, self.mol._atm, self.mol._bas, env=self.mol._env
+            )
+            ao_ovlp = ao_ovlp_tmp[np.ix_(self.permu_basis, self.permu_basis)]
+            self._ao_norm = np.sqrt(np.diag(ao_ovlp))
+            ao_ovlp = ao_ovlp / self._ao_norm[None, :] / self._ao_norm[:, None]
+            self._ao_ovlp = ao_ovlp
+        except Exception as e:
+            raise ValueError(f"Error occur while reading and ao_ovlp:{e}")
+        return self._ao_ovlp
+
     def get_ao_dip(self):
         if self._ao_dip is not None:
             return self._ao_dip
@@ -69,9 +100,12 @@ class calc_ao_element:
             ao_dip = np.real(
                 ao_dip_tmp[np.ix_(np.arange(3), self.permu_basis, self.permu_basis)]
             )
+            ao_dip = (
+                ao_dip / self._ao_norm[None, None, :] / self._ao_norm[None, :, None]
+            )
             self._ao_dip = ao_dip
         except Exception as e:
-            raise ValueError(f"Error occur while reading ao_ovlp and ao_dip:{e}")
+            raise ValueError(f"Error occur while reading and ao_dip:{e}")
         return self._ao_dip
 
     def get_ao_dip_deriv(self):
@@ -95,6 +129,11 @@ class calc_ao_element:
                             v = ao_dip_deriv_tmp[i, j, k, l]
                             ao_dip_deriv[self.basis_idx[l], j, i, k, l] += -v
                             ao_dip_deriv[self.basis_idx[l], j, i, l, k] += -v
+            ao_dip_deriv = (
+                ao_dip_deriv
+                / self._ao_norm[None, None, None, None, :]
+                / self._ao_norm[None, None, None, :, None]
+            )
             self._ao_dip_deriv = ao_dip_deriv
         except Exception as e:
             raise ValueError(f"Error occur while reading ao_ovlp and ao_dip:{e}")
@@ -111,6 +150,9 @@ class calc_ao_element:
             ao_soc = -1.0 * np.real(
                 ao_soc_tmp[np.ix_(np.arange(3), self.permu_basis, self.permu_basis)]
             )
+            ao_soc = (
+                ao_soc / self._ao_norm[None, None, :] / self._ao_norm[None, :, None]
+            )
             self._ao_soc = ao_soc
         except Exception as e:
             raise ValueError(f"Error occur while reading ao_ovlp and ao_soc:{e}")
@@ -126,16 +168,19 @@ class calc_ao_element:
             mat = np.zeros(
                 (self.natoms, 3, 3, self.nbasis, self.nbasis)
             )  # atom, xyz, q, i, j
+            am2nb = [1, 3, 6]
             for k in range(self.mol.natm):
                 self.mol.set_rinv_origin(self.mol.atom_coord(k))
                 Z_k = self.mol._atm[k, 0]
                 idx_i = 0
                 for i in range(self.mol.nbas):
                     am_i = self.mol._bas[i, 1]
+                    nb_i = am2nb[am_i]
                     idx_j = 0
                     for j in range(self.mol.nbas):
                         am_j = self.mol._bas[j, 1]
-                        buf = np.zeros((3, 3, am_j * 2 + 1, am_i * 2 + 1))
+                        nb_j = am2nb[am_j]
+                        buf = np.zeros((3, 3, nb_j, nb_i))
                         fn(
                             buf.ctypes.data_as(ctypes.c_void_p),
                             (ctypes.c_int * 2)(i, j),
@@ -150,11 +195,11 @@ class calc_ao_element:
                             k,
                             :,
                             :,
-                            idx_i : idx_i + am_i * 2 + 1,
-                            idx_j : idx_j + am_j * 2 + 1,
+                            idx_i : idx_i + nb_i,
+                            idx_j : idx_j + nb_j,
                         ] = buf * Z_k
-                        idx_j += am_j * 2 + 1
-                    idx_i += am_i * 2 + 1
+                        idx_j += nb_j
+                    idx_i += nb_i
 
             mat = 1.0 * np.real(
                 mat[
@@ -175,13 +220,18 @@ class calc_ao_element:
 
             bas2nuc = []
             for i in range(self.mol.nbas):
-                bas2nuc.extend([self.mol._bas[i, 0]] * (self.mol._bas[i, 1] * 2 + 1))
+                bas2nuc.extend([self.mol._bas[i, 0]] * (am2nb[self.mol._bas[i, 1]]))
             bas2nuc = np.array(bas2nuc)[self.permu_basis]
 
             for i, t_i in enumerate(bas2nuc):
                 res[t_i, :, :, i, :] -= res_l[:, :, i, :]
                 res[t_i, :, :, :, i] -= res_r[:, :, :, i]
-            self._ao_soc_deriv = res
+            ao_soc_deriv = (
+                res
+                / self._ao_norm[None, None, None, None, :]
+                / self._ao_norm[None, None, None, :, None]
+            )
+            self._ao_soc_deriv = ao_soc_deriv
         except Exception as e:
             raise ValueError(f"Error occur while reading ao_ovlp and ao_soc_deriv:{e}")
         return self._ao_soc_deriv
