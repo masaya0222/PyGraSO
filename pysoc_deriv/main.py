@@ -2,9 +2,9 @@ import sys
 import numpy as np
 import periodictable
 
-from parser import gaussian_perser
-from num_deriv import numerical_deriv
-from calc_ao_element import calc_ao_element
+from .parser import gaussian_perser
+from .num_deriv import numerical_deriv
+from .calc_ao_element import calc_ao_element
 
 
 def main():

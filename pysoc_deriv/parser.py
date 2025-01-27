@@ -72,7 +72,7 @@ class gaussian_perser:
             self.nva,
             self.basis_idx,
             self.nxy,
-        ) = self.extract_orb_info(self.log_file_name)
+        ) = self.extract_orb_info()
         self.rwf_parser = RWF_parser(self.rwf_file_name)
 
         self._ao_ovlp = None
@@ -93,8 +93,8 @@ class gaussian_perser:
         self._dip = None
         self._tdip = None
 
-    def extract_orb_info(self, log_file_name):
-        with open(log_file_name, mode="r") as f:
+    def extract_orb_info(self):
+        with open(self.log_file_name, mode="r") as f:
             lines = [line.strip() for line in f.readlines()]
         natoms = int(
             [line for line in lines if line.startswith("NAtoms=")][0].split()[1]
@@ -150,6 +150,8 @@ class gaussian_perser:
         return natoms, nbasis, nfc, norb, noa, nva, basis_idx, nxy
 
     def read_basis(self):
+        if self._basis is not None:
+            return self._basis
         with open(self.log_file_name, mode="r") as f:
             lines = [line.strip() for line in f.readlines()]
         atoms_key = "Center     Atomic      Atomic             Coordinates (Angstroms)"
@@ -196,7 +198,8 @@ class gaussian_perser:
                     basis[atoms_symbol[i]].append([0] + coeff[:, [0, 1]].tolist())
                     basis[atoms_symbol[i]].append([1] + coeff[:, [0, 2]].tolist())
                 now_line += 1 + nctr
-        return basis
+        self._basis = basis
+        return self._basis
 
     def get_mo_coeff(self):
         if self._mo_coeff is not None:

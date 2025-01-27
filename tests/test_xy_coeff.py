@@ -1,8 +1,8 @@
 import os
 import numpy as np
 
-from parser import gaussian_perser
-from num_deriv import numerical_deriv
+from pysoc_deriv.parser import gaussian_perser
+from pysoc_deriv.num_deriv import numerical_deriv
 
 
 def test_h2_tda_x_coeff():

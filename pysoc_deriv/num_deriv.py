@@ -2,9 +2,9 @@ import os
 import subprocess
 import numpy as np
 
-from parser import gaussian_perser
-from calc_ao_element import calc_ao_element
-from calc_soc import calc_soc_s0t1, calc_soc_s1t1
+from .parser import gaussian_perser
+from .calc_ao_element import calc_ao_element
+from .calc_soc import calc_soc_s0t1, calc_soc_s1t1
 
 
 def generate_input_file(

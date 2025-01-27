@@ -1,3 +1,4 @@
+git submodule update --init --recursive
 cd thridparty/libcint/scripts/
 
 output_file="original.cl"

@@ -1,7 +1,7 @@
 import numpy as np
 
-from parser import gaussian_perser
-from calc_ao_element import calc_ao_element
+from .parser import gaussian_perser
+from .calc_ao_element import calc_ao_element
 
 fine_stru = 7.297352568e-3
 au2wavnum = 219474.6

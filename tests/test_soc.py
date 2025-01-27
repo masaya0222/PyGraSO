@@ -1,9 +1,9 @@
 import os
 import numpy as np
 
-from parser import gaussian_perser
-from num_deriv import numerical_deriv
-from calc_ao_element import calc_ao_element
+from pysoc_deriv.parser import gaussian_perser
+from pysoc_deriv.num_deriv import numerical_deriv
+from pysoc_deriv.calc_ao_element import calc_ao_element
 
 
 def test_h2o_td_soc():
