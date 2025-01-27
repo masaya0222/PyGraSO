@@ -2,7 +2,7 @@
 %Mem=2GB
 %rwf=h2o_tda.rwf
 %NProcShared=32
-#p tda(nstates=6,root=1,conver=6) freq PBE1PBE/6-31G 6D 10F nosymm GFInput scf=tight IOP(10/33=4,10/95=9)
+#p tda(nstates=6,root=1,conver=6) freq PBE1PBE/6-31G 6D 10F nosymm GFInput scf=tight IOP(10/33=2,10/95=9)
 
 title
 
