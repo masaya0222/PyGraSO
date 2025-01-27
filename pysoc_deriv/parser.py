@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import numpy as np
 import periodictable
+import json
 
 
 def flatten_to_symmetric(flat_array, nbasis):
@@ -56,8 +57,42 @@ def read_block2(lines, start, nrow, ncol):
     return tmp
 
 
-class gaussian_perser:
+class abstract_parser:
+    def __init__(self):
+        self.natoms = None
+        self.nbasis = None
+        self.nfc = None
+        self.norb = None
+        self.noa = None
+        self.nva = None
+        self.basis_idx = None
+        self.nxy = None
+
+        self._basis = None
+
+        self._ao_ovlp = None
+        self._ao_ovlp_deriv = None
+
+        self._mo_coeff = None
+        self._mo_coeff_U = None
+        self._mo_coeff_deriv = None
+
+        self._x_coeff = None
+        self._x_tdens_deriv = None
+        self._x_coeff_deriv = None
+
+        self._y_coeff = None
+        self._y_tdens_deriv = None
+        self._y_coeff_deriv = None
+
+        self._dip = None
+        self._tdip = None
+
+
+class gaussian_perser(abstract_parser):
     def __init__(self, log_file_name, rwf_file_name):
+        super().__init__()
+
         assert os.path.isfile(log_file_name), f"{log_file_name=} does'nt exist"
         self.log_file_name = log_file_name
         assert os.path.isfile(rwf_file_name), f"{rwf_file_name=} does'nt exist"
@@ -74,24 +109,6 @@ class gaussian_perser:
             self.nxy,
         ) = self.extract_orb_info()
         self.rwf_parser = RWF_parser(self.rwf_file_name)
-
-        self._ao_ovlp = None
-        self._ao_ovlp_deriv = None
-
-        self._mo_coeff = None
-        self._mo_coeff_U = None
-        self._mo_coeff_deriv = None
-
-        self._x_coeff = None
-        self._x_tdens_deriv = None
-        self._x_coeff_deriv = None
-        if self.nxy == 2:
-            self._y_coeff = None
-            self._y_tdens_deriv = None
-            self._y_coeff_deriv = None
-
-        self._dip = None
-        self._tdip = None
 
     def extract_orb_info(self):
         with open(self.log_file_name, mode="r") as f:
@@ -388,22 +405,21 @@ class gaussian_perser:
                 y_coeff_deriv_tmp = x_coeff_deriv_tmp[:, self.noa :, :]
                 x_coeff_deriv_tmp = x_coeff_deriv_tmp[:, : self.noa, :]
 
-            ilines = []
-            key = "MO coefficient derivatives for IC="
-            for i, line in enumerate(lines):
-                if line.startswith(key):
-                    ilines.append(i)
-            assert len(ilines) == self.natoms * 3 + 3, (
-                "Don't match len(ilines) == natoms*3+3"
+            mo_coeff_U = self.rwf_parser.parse(self.rwf_parser.U_CPHF)
+            mo_coeff_U = mo_coeff_U[
+                3 * self.nbasis * self.nbasis : (3 + 3 * self.natoms)
+                * self.nbasis
+                * self.nbasis
+            ]
+            mo_coeff_U = (
+                np.array([float(c.replace("D", "E")) for c in mo_coeff_U])
+                .reshape(self.natoms, 3, self.nbasis, self.nbasis)
+                .transpose(0, 1, 3, 2)
             )
-            ilines = ilines[3:]
-
-            mo_coeff_deriv_tmp = []
-            for iline in ilines:
-                mo_coeff_deriv_tmp.append(
-                    read_block(lines, iline + 1, self.nbasis, self.nbasis).T
-                )
-            mo_coeff_deriv_tmp = np.array(mo_coeff_deriv_tmp)
+            mo_coeff = self.get_mo_coeff()
+            mo_coeff_deriv_tmp = np.einsum(
+                "lk,rdlm->rdmk", mo_coeff, mo_coeff_U
+            ).reshape(self.natoms * 3, self.nbasis, self.nbasis)
 
             mo_coeff_deriv_tmp_i = mo_coeff_deriv_tmp[:, : self.nfc + self.noa, :]
             mo_coeff_deriv_tmp_a = mo_coeff_deriv_tmp[:, self.nfc + self.noa :, :]
@@ -571,6 +587,34 @@ class gaussian_perser:
         except Exception as e:
             raise ValueError(f"Error occur while reading tdip:{e}")
         return self._tdip
+
+    def dump_json(self, dump_json_file):
+        dump_dir = {
+            "natoms": self.natoms,
+            "nbasis": self.nbasis,
+            "nfc": self.nfc,
+            "norb": self.norb,
+            "noa": self.noa,
+            "nva": self.nva,
+            "basis_idx": self.basis_idx,
+            "nxy": self.nxy,
+            "_basis": self._basis,
+        }
+
+        with open(dump_json_file, "w") as f:
+            json.dump(dump_dir, f)
+
+
+class decode_gaussian_parser(abstract_parser):
+    def __init__(self, dump_json_file, dump_npz_file):
+        with open(dump_json_file, "r") as f:
+            dump_dir = json.load(f)
+        for key, value in dump_dir.items():
+            setattr(self, key, value)
+
+        loaded_mat = np.load(dump_npz_file)
+        for key, value in loaded_mat.items():
+            setattr(self, "_" + key, value)
 
 
 class RWF_parser:

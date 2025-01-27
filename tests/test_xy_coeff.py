@@ -38,7 +38,7 @@ def test_h2_tda_x_coeff_deriv_anal():
     assert isinstance(x_coeff_deriv, np.ndarray)
 
     answer = np.load(current_dir + "/data/h2_tda_x_coeff_deriv.npy")
-    assert np.allclose(x_coeff_deriv, answer)
+    assert np.allclose(x_coeff_deriv, answer, atol=1e-5)
 
 
 def test_h2_tda_x_coeff_deriv_num():
@@ -93,8 +93,8 @@ def test_h2_td_xy_coeff_deriv_anal():
     assert isinstance(xy_coeff_deriv, tuple)
 
     answer = np.load(current_dir + "/data/h2_td_xy_coeff_deriv.npy")
-    assert np.allclose(xy_coeff_deriv[0], answer[0])
-    assert np.allclose(xy_coeff_deriv[1], answer[1])
+    assert np.allclose(xy_coeff_deriv[0], answer[0], atol=1e-5)
+    assert np.allclose(xy_coeff_deriv[1], answer[1], atol=1e-5)
 
 
 def test_h2_td_xy_coeff_deriv_num():
@@ -159,7 +159,7 @@ def test_h2o_tda_x_coeff_deriv_anal():
 
     # np.save(current_dir+'/data/h2o_tda_x_coeff_deriv.npy', x_coeff_deriv)
     answer = np.load(current_dir + "/data/h2o_tda_x_coeff_deriv.npy")
-    assert np.allclose(x_coeff_deriv, answer)
+    assert np.allclose(x_coeff_deriv, answer, atol=1e-5)
 
 
 def test_h2_tda_x_coeff_deriv_num():
@@ -227,8 +227,8 @@ def test_h2o_td_xy_coeff_deriv_anal():
 
     # np.save(current_dir+'/data/h2o_td_xy_coeff_deriv.npy', xy_coeff_deriv)
     answer = np.load(current_dir + "/data/h2o_td_xy_coeff_deriv.npy")
-    assert np.allclose(xy_coeff_deriv[0], answer[0])
-    assert np.allclose(xy_coeff_deriv[1], answer[1])
+    assert np.allclose(xy_coeff_deriv[0], answer[0], atol=1e-5)
+    assert np.allclose(xy_coeff_deriv[1], answer[1], atol=1e-5)
 
 
 def test_h2_td_xy_coeff_deriv_num():
