@@ -5,6 +5,9 @@ import subprocess
 import numpy as np
 import periodictable
 import json
+import itertools
+
+CHUNK_SIZE = 10**6
 
 
 def flatten_to_symmetric(flat_array, nbasis):
@@ -18,13 +21,9 @@ def flatten_to_symmetric(flat_array, nbasis):
         np.ndarray: Symmetric two-dimensional square matrix.
     """
     symmetric_matrix = np.zeros((nbasis, nbasis))
-
-    idx = 0
-    for i in range(nbasis):
-        for j in range(i + 1):
-            symmetric_matrix[i, j] = flat_array[idx]
-            symmetric_matrix[j, i] = flat_array[idx]
-            idx += 1
+    indices = np.tril_indices(nbasis)
+    symmetric_matrix[indices] = flat_array
+    symmetric_matrix += np.tril(symmetric_matrix, -1).T
     return symmetric_matrix
 
 
@@ -55,6 +54,63 @@ def read_block2(lines, start, nrow, ncol):
         start += nrow + 1
     tmp = np.array(tmp).T
     return tmp
+
+
+def search_by_chunk(file_name, key_list, method="start"):
+    if isinstance(key_list, str):
+        key_list = [key_list]
+    method_list = ["start", "re"]
+    assert method in method_list, f"method must be {method_list}, but {method}"
+
+    iline = 0
+    found = False
+    with open(file_name, mode="r") as f:
+        while chunk := list(itertools.islice(f, CHUNK_SIZE)):
+            for key in key_list:
+                if method == "start":
+                    if any(line.startswith(key) for line in chunk):
+                        found = True
+                        break
+                elif method == "re":
+                    if any(re.match(key, line) for line in chunk):
+                        found = True
+                        break
+            if found:
+                break
+            iline += CHUNK_SIZE
+
+    if not chunk:
+        raise ValueError(f"Can't find {key}")
+
+    for i, line in enumerate(chunk):
+        for key in key_list:
+            if method == "start":
+                if line.startswith(key):
+                    return iline + i, line
+            elif method == "re":
+                if re.match(key, line):
+                    return iline + i, line
+    raise ValueError
+
+
+def extract_lines_by_chunk(file_name, start_line, end_line):
+    extracted_lines = []
+    current_line = 0
+    with open(file_name, mode="r") as f:
+        while chunk := list(itertools.islice(f, CHUNK_SIZE)):
+            if current_line + CHUNK_SIZE < start_line:
+                current_line += CHUNK_SIZE
+                continue
+            if current_line >= end_line:
+                break
+            for i, line in enumerate(chunk):
+                if current_line + i >= end_line:
+                    break
+                if current_line + i >= start_line:
+                    extracted_lines.append(line.strip())
+            current_line += CHUNK_SIZE
+
+    return extracted_lines
 
 
 class abstract_parser:
@@ -93,9 +149,9 @@ class gaussian_perser(abstract_parser):
     def __init__(self, log_file_name, rwf_file_name):
         super().__init__()
 
-        assert os.path.isfile(log_file_name), f"{log_file_name=} does'nt exist"
+        assert os.path.isfile(log_file_name), f"{log_file_name=} doesn't exist"
         self.log_file_name = log_file_name
-        assert os.path.isfile(rwf_file_name), f"{rwf_file_name=} does'nt exist"
+        assert os.path.isfile(rwf_file_name), f"{rwf_file_name=} doesn't exist"
         self.rwf_file_name = rwf_file_name
 
         (
@@ -111,18 +167,25 @@ class gaussian_perser(abstract_parser):
         self.rwf_parser = RWF_parser(self.rwf_file_name)
 
     def extract_orb_info(self):
-        with open(self.log_file_name, mode="r") as f:
-            lines = [line.strip() for line in f.readlines()]
+        key = " NAtoms="
         natoms = int(
-            [line for line in lines if line.startswith("NAtoms=")][0].split()[1]
+            search_by_chunk(self.log_file_name, key_list=" NAtoms=", method="start")[
+                1
+            ].split()[1]
         )
-        pattern = r"^NBasis=\s+\d+\s+NAE=\s+\d+\s+NBE=\s+\d+\s+NFC=\s+\d+\s+NFV=\s+\d+$"
-        basis_line_num = [i for i, line in enumerate(lines) if re.match(pattern, line)][
-            0
-        ]
-        basis_line = lines[basis_line_num].split()
+        pattern = r" NBasis=\s+\d+\s+NAE=\s+\d+\s+NBE=\s+\d+\s+NFC=\s+\d+\s+NFV=\s+\d+$"
+        basis_line = (
+            search_by_chunk(self.log_file_name, key_list=pattern, method="re")[1]
+            .strip()
+            .split()
+        )
         nbasis, nfc = int(basis_line[1]), int(basis_line[7])
-        orb_line = lines[basis_line_num + 1].split()
+        pattern = r" NROrb=\s+\d+\s+NOA=\s+\d+\s+NOB=\s+\d+\s+NVA=\s+\d+\s+NVB=\s+\d+$"
+        orb_line = (
+            search_by_chunk(self.log_file_name, key_list=pattern, method="re")[1]
+            .strip()
+            .split()
+        )
         norb, noa, nob, nva, nvb = (
             int(orb_line[1]),
             int(orb_line[3]),
@@ -136,64 +199,72 @@ class gaussian_perser(abstract_parser):
             f"must satisfy following relationship, nbasis == nfc + noa + nva, but {nbasis=} {nfc=} {noa=} {nva=}"
         )
 
-        tmp = [
-            i
-            for i, line in enumerate(lines)
-            if line.startswith(
-                "AO basis set in the form of general basis input (Overlap normalization):"
-            )
+        key = (
+            " AO basis set in the form of general basis input (Overlap normalization):"
+        )
+        start_line = search_by_chunk(self.log_file_name, key_list=key, method="start")[
+            0
         ]
-        basis_line_idxs = [tmp[0]] + [
-            i for i, line in enumerate(lines) if line == "****"
+        pattern = r"\s*\d+\s+basis functions,\s+\d+\s+primitive gaussians,\s+\d+\s+cartesian basis functions"
+        end_line = (
+            search_by_chunk(self.log_file_name, key_list=pattern, method="re")[0] - 1
+        )
+        extract_lines = extract_lines_by_chunk(self.log_file_name, start_line, end_line)
+        basis_line_idxs = [0] + [
+            i for i, line in enumerate(extract_lines) if line == "****"
         ]
         assert len(basis_line_idxs) == natoms + 1, "length of Basis idx must be natoms"
         basis_idx = []
         basis_num = {"S": 1, "P": 3, "SP": 4, "D": 6, "F": 10}
         for i, idx1 in enumerate(basis_line_idxs[:natoms]):
             idx2 = basis_line_idxs[i + 1]
-            assert i + 1 == int(lines[idx1 + 1].split()[0]), "wrong number"
+            assert i + 1 == int(extract_lines[idx1 + 1].split()[0]), "wrong number"
             for j in range(idx1 + 1, idx2):
-                if lines[j].split()[0] in basis_num.keys():
-                    basis_idx += [i] * basis_num[lines[j].split()[0]]
+                if extract_lines[j].split()[0] in basis_num.keys():
+                    basis_idx += [i] * basis_num[extract_lines[j].split()[0]]
         assert len(basis_idx) == nbasis, f"{len(basis_idx)=}, {nbasis=}"
 
-        tda_key = "Total Energy, E(CIS/TDA) ="
-        rpa_key = "Total Energy, E(TD-HF/TD-DFT) ="
+        key_list = [" Total Energy, E(CIS/TDA) =", " Total Energy, E(TD-HF/TD-DFT) ="]
+        line = search_by_chunk(self.log_file_name, key_list=key_list, method="start")[1]
         nxy = 0
-        if len([line for line in lines if line.startswith(tda_key)]):
+        if line.startswith(key_list[0]):
             nxy = 1
-        elif len([line for line in lines if line.startswith(rpa_key)]):
+        elif line.startswith(key_list[1]):
             nxy = 2
+
         return natoms, nbasis, nfc, norb, noa, nva, basis_idx, nxy
 
     def read_basis(self):
         if self._basis is not None:
             return self._basis
-        with open(self.log_file_name, mode="r") as f:
-            lines = [line.strip() for line in f.readlines()]
-        atoms_key = "Center     Atomic      Atomic             Coordinates (Angstroms)"
-        atoms_key_line = [
-            i for i, line in enumerate(lines) if line.startswith(atoms_key)
-        ][0] + 3
+        atoms_key = " Center     Atomic      Atomic             Coordinates (Angstroms)"
+        atoms_key_line = (
+            search_by_chunk(self.log_file_name, key_list=atoms_key, method="start")[0]
+            + 3
+        )
         atoms_num = [
             int(line.split()[1])
-            for line in lines[atoms_key_line : atoms_key_line + self.natoms]
+            for line in extract_lines_by_chunk(
+                self.log_file_name, atoms_key_line, atoms_key_line + self.natoms
+            )
         ]
         atoms_symbol = [
             periodictable.elements[atom_num].symbol for atom_num in atoms_num
         ]
-
-        start_line = [
-            i for i, line in enumerate(lines) if line.startswith("AO basis set")
-        ][0]
-        pattern = r"\s*(\d+)\s*basis functions,\s*(\d+)\s*primitive gaussians,\s*(\d+)\s*cartesian basis functions"
-        end_line = [i for i, line in enumerate(lines) if re.match(pattern, line)][0] - 1
-        tmp_line = [start_line] + [
-            start_line + i
-            for i, line in enumerate(lines[start_line:end_line])
-            if line.startswith("****")
+        key = (
+            " AO basis set in the form of general basis input (Overlap normalization):"
+        )
+        start_line = search_by_chunk(self.log_file_name, key_list=key, method="start")[
+            0
         ]
-
+        pattern = r"\s*\d+\s+basis functions,\s+\d+\s+primitive gaussians,\s+\d+\s+cartesian basis functions"
+        end_line = (
+            search_by_chunk(self.log_file_name, key_list=pattern, method="re")[0] - 1
+        )
+        extract_lines = extract_lines_by_chunk(self.log_file_name, start_line, end_line)
+        tmp_line = [0] + [
+            i for i, line in enumerate(extract_lines) if line.startswith("****")
+        ]
         assert len(tmp_line) - 1 == self.natoms, "number of basis doesn't match "
         basis_line = [(tmp_line[i] + 1, tmp_line[i + 1]) for i in range(self.natoms)]
         basis = dict()
@@ -204,14 +275,14 @@ class gaussian_perser(abstract_parser):
             basis[atoms_symbol[i]] = []
             now_line = basis_line[i][0] + 1
             while now_line < basis_line[i][1]:
-                tmp = lines[now_line].split()
+                tmp = extract_lines[now_line].split()
                 angular, nctr = tmp[0], int(tmp[1])
                 if len(angular) == 1:
                     angular_num = angular_sym2num[angular]
-                    coeff = read_block2(lines, now_line + 1, nctr, 2)
+                    coeff = read_block2(extract_lines, now_line + 1, nctr, 2)
                     basis[atoms_symbol[i]].append([angular_num] + coeff.tolist())
                 elif angular == "SP":
-                    coeff = read_block2(lines, now_line + 1, nctr, 3)
+                    coeff = read_block2(extract_lines, now_line + 1, nctr, 3)
                     basis[atoms_symbol[i]].append([0] + coeff[:, [0, 1]].tolist())
                     basis[atoms_symbol[i]].append([1] + coeff[:, [0, 2]].tolist())
                 now_line += 1 + nctr
@@ -284,21 +355,10 @@ class gaussian_perser(abstract_parser):
         if self._mo_coeff_U is not None:
             return self._mo_coeff_U
         try:
-            mo_coeff_U = self.rwf_parser.parse(self.rwf_parser.U_CPHF)
-            mo_coeff_U = mo_coeff_U[
-                3 * self.nbasis * self.nbasis : (3 + 3 * self.natoms)
-                * self.nbasis
-                * self.nbasis
-            ]
-            mo_coeff_U = (
-                np.array([float(c.replace("D", "E")) for c in mo_coeff_U])
-                .reshape(self.natoms, 3, self.nbasis, self.nbasis)
-                .transpose(0, 1, 3, 2)
-            )
-            U1 = mo_coeff_U
-
             num_unique = self.nbasis * (self.nbasis + 1) // 2
-            mo_f1 = self.rwf_parser.parse(self.rwf_parser.F1_CPHF)[3 * num_unique :]
+            mo_f1 = self.rwf_parser.parse(
+                self.rwf_parser.F1_CPHF, (3 + self.natoms * 3) * num_unique
+            )[3 * num_unique :]
             mo_f1 = np.array([float(c.replace("D", "E")) for c in mo_f1])
             mo_f1 = np.array(
                 [
@@ -313,11 +373,9 @@ class gaussian_perser(abstract_parser):
             mo_energy = self.rwf_parser.parse(self.rwf_parser.MO_ENERGY, self.nbasis)
             mo_energy = np.array([float(c.replace("D", "E")) for c in mo_energy])
             delta = 1e-18
-
             ao_ovlp_deriv = self.get_ao_ovlp_deriv()
             mo_coeff = self.get_mo_coeff()
             mo_ovlp_deriv = (mo_coeff) @ ao_ovlp_deriv @ (mo_coeff.T)
-
             tmp1 = mo_f1 - mo_ovlp_deriv * mo_energy[None, None, None, :]
             tmp2 = mo_energy[None, :] - mo_energy[:, None] + delta
             mo_coeff_U = tmp1 / tmp2[None, None, :, :]
@@ -326,9 +384,8 @@ class gaussian_perser(abstract_parser):
                 for j in range(3):
                     for k in range(self.nbasis):
                         mo_coeff_U[i, j, k, k] = -0.5 * mo_ovlp_deriv[i, j, k, k]
-            U2 = mo_coeff_U
-            # TODO which is correct, U1 and U2
-            self._mo_coeff_U = U2
+
+            self._mo_coeff_U = mo_coeff_U
         except Exception as e:
             raise ValueError(f"Error occur while reading mo_coeff_U:{e}")
         return self._mo_coeff_U
@@ -339,7 +396,8 @@ class gaussian_perser(abstract_parser):
         try:
             mo_coeff = self.get_mo_coeff()
             mo_coeff_U = self.get_mo_coeff_U()
-            mo_coeff_deriv = np.einsum("lk,rdlm->rdmk", mo_coeff, mo_coeff_U)
+            mo_coeff_U = mo_coeff_U.transpose(0, 1, 3, 2)
+            mo_coeff_deriv = mo_coeff_U @ mo_coeff
 
             self._mo_coeff_deriv = mo_coeff_deriv
         except Exception as e:
@@ -386,21 +444,35 @@ class gaussian_perser(abstract_parser):
             if (self.nxy == 2) and (self._y_tdens_deriv is not None):
                 return self._x_tdens_deriv, self._y_tdens_deriv
         try:
-            with open(self.log_file_name, mode="r") as f:
-                lines = [line.strip() for line in f.readlines()]
+            if self.nxy == 1:
+                pattern = r" \[X\]\(x\) alpha: IBuc=(\d+) IX=\s+1 I=\s+1 J=\s+1:"
+            elif self.nxy == 2:
+                pattern = r" \[X,Y\]\(x\) alpha: IBuc=(\d+) IX=\s+1 I=\s+1 J=\s+1:"
+            end_line = search_by_chunk(self.log_file_name, pattern, method="re")[0]
+            stride = (self.nva + 1) * ((self.noa * self.nxy + 4) // 5) + 1
+            start_line = end_line - stride * (self.natoms * 3)
+            extract_lines = extract_lines_by_chunk(
+                self.log_file_name, start_line, end_line
+            )
+            assert len(extract_lines) > 0, (
+                "Can't find CPHF results line in logfile, please set iop(10/33=2)"
+            )
+
             ilines = []
             key = "CPHF results for U (alpha) for IMat="
-            for i, line in enumerate(lines):
+            for i, line in enumerate(extract_lines):
                 if line.startswith(key):
                     ilines.append(i)
-            ilines = ilines[-self.natoms * 3 :]
 
             x_coeff_deriv_tmp = []
             for iline in ilines:
                 x_coeff_deriv_tmp.append(
-                    read_block(lines, iline + 1, self.nva, self.noa * self.nxy).T
+                    read_block(
+                        extract_lines, iline + 1, self.nva, self.noa * self.nxy
+                    ).T
                 )
             x_coeff_deriv_tmp = np.array(x_coeff_deriv_tmp)
+
             if self.nxy == 2:
                 y_coeff_deriv_tmp = x_coeff_deriv_tmp[:, self.noa :, :]
                 x_coeff_deriv_tmp = x_coeff_deriv_tmp[:, : self.noa, :]
@@ -411,15 +483,14 @@ class gaussian_perser(abstract_parser):
                 * self.nbasis
                 * self.nbasis
             ]
-            mo_coeff_U = (
-                np.array([float(c.replace("D", "E")) for c in mo_coeff_U])
-                .reshape(self.natoms, 3, self.nbasis, self.nbasis)
-                .transpose(0, 1, 3, 2)
-            )
+            mo_coeff_U = np.array(
+                [float(c.replace("D", "E")) for c in mo_coeff_U]
+            ).reshape(self.natoms, 3, self.nbasis, self.nbasis)
+
             mo_coeff = self.get_mo_coeff()
-            mo_coeff_deriv_tmp = np.einsum(
-                "lk,rdlm->rdmk", mo_coeff, mo_coeff_U
-            ).reshape(self.natoms * 3, self.nbasis, self.nbasis)
+            mo_coeff_deriv_tmp = (mo_coeff_U @ mo_coeff).reshape(
+                self.natoms * 3, self.nbasis, self.nbasis
+            )
 
             mo_coeff_deriv_tmp_i = mo_coeff_deriv_tmp[:, : self.nfc + self.noa, :]
             mo_coeff_deriv_tmp_a = mo_coeff_deriv_tmp[:, self.nfc + self.noa :, :]
@@ -429,21 +500,17 @@ class gaussian_perser(abstract_parser):
                 y_coeff = x_coeff[1]  # Y, dexcitation amplitude
                 x_coeff = x_coeff[0]  # X, excitation amplitude
 
-            mo_coeff = self.get_mo_coeff()
             mo_coeff_i = mo_coeff[: self.nfc + self.noa, :]
             mo_coeff_a = mo_coeff[self.nfc + self.noa :, :]
 
             CPt = (mo_coeff_i.T) @ x_coeff
             PtCt = (mo_coeff_a.T) @ x_coeff.T
 
-            x_tdens_deriv_1 = -1.0 * np.einsum(
-                "ria,ip,aq->rpq",
-                x_coeff_deriv_tmp,
-                mo_coeff_i[self.nfc :, :],
-                mo_coeff_a,
+            x_tdens_deriv_1 = (
+                -1.0 * (mo_coeff_i[self.nfc :, :].T) @ x_coeff_deriv_tmp @ mo_coeff_a
             )
-            x_tdens_deriv_2 = np.einsum("pa,raq->rpq", CPt, mo_coeff_deriv_tmp_a)
-            x_tdens_deriv_3 = np.einsum("rip,qi->rpq", mo_coeff_deriv_tmp_i, PtCt)
+            x_tdens_deriv_2 = CPt @ mo_coeff_deriv_tmp_a
+            x_tdens_deriv_3 = (PtCt @ mo_coeff_deriv_tmp_i).transpose(0, 2, 1)
 
             x_tdens_deriv = x_tdens_deriv_1 + x_tdens_deriv_2 + x_tdens_deriv_3
             x_tdens_deriv *= 2.0
@@ -457,14 +524,11 @@ class gaussian_perser(abstract_parser):
                 CPt2 = (mo_coeff_a.T) @ y_coeff.T
                 PtCt2 = (mo_coeff_i.T) @ y_coeff
 
-                y_tdens_deriv_1 = -1.0 * np.einsum(
-                    "ria,ip,aq->rqp",
-                    y_coeff_deriv_tmp,
-                    mo_coeff_i[self.nfc :, :],
-                    mo_coeff_a,
-                )
-                y_tdens_deriv_2 = np.einsum("pi,riq->rpq", CPt2, mo_coeff_deriv_tmp_i)
-                y_tdens_deriv_3 = np.einsum("rap,qa->rpq", mo_coeff_deriv_tmp_a, PtCt2)
+                y_tdens_deriv_1 = -1.0 * (
+                    mo_coeff_i[self.nfc :, :].T @ y_coeff_deriv_tmp @ mo_coeff_a
+                ).transpose(0, 2, 1)
+                y_tdens_deriv_2 = CPt2 @ mo_coeff_deriv_tmp_i
+                y_tdens_deriv_3 = (PtCt2 @ mo_coeff_deriv_tmp_a).transpose(0, 2, 1)
 
                 y_tdens_deriv = y_tdens_deriv_1 + y_tdens_deriv_2 + y_tdens_deriv_3
                 y_tdens_deriv *= 2.0
@@ -473,7 +537,6 @@ class gaussian_perser(abstract_parser):
                 )
 
                 self._y_tdens_deriv = y_tdens_deriv
-
         except Exception as e:
             raise ValueError(f"Error occur while reading tdens_deriv:{e}")
         if self.nxy == 1:
@@ -503,50 +566,45 @@ class gaussian_perser(abstract_parser):
 
             ao_ovlp = self.get_ao_ovlp()
 
-            x_tdens_deriv2 = np.einsum(
-                "ia,ip,rdaq->rdpq",
-                x_coeff,
-                mo_coeff[: self.nfc + self.noa, :],
-                mo_coeff_deriv[:, :, self.nfc + self.noa :, :],
+            x_tdens_deriv2 = (
+                mo_coeff[: self.nfc + self.noa, :].T
+                @ x_coeff
+                @ mo_coeff_deriv[:, :, self.nfc + self.noa :, :]
             )
-            x_tdens_deriv3 = np.einsum(
-                "ia,rdip,aq->rdpq",
-                x_coeff,
-                mo_coeff_deriv[:, :, : self.nfc + self.noa, :],
-                mo_coeff[self.nfc + self.noa :, :],
-            )
+            x_tdens_deriv3 = (
+                mo_coeff[self.nfc + self.noa :, :].T
+                @ x_coeff.T
+                @ mo_coeff_deriv[:, :, : self.nfc + self.noa, :]
+            ).transpose(0, 1, 3, 2)
             x_tdens_deriv -= x_tdens_deriv2 + x_tdens_deriv3
 
-            x_coeff_deriv = np.einsum(
-                "rdpq,ip,aq->rdia",
-                x_tdens_deriv,
-                mo_coeff[: self.nfc + self.noa, :] @ ao_ovlp,
-                mo_coeff[self.nfc + self.noa :, :] @ ao_ovlp,
+            x_coeff_deriv = (
+                (mo_coeff[: self.nfc + self.noa, :] @ ao_ovlp)
+                @ x_tdens_deriv
+                @ (mo_coeff[self.nfc + self.noa :, :] @ ao_ovlp).T
             )
             self._x_coeff_deriv = x_coeff_deriv
 
             if self.nxy == 2:
                 y_tdens_deriv = 0.5 * y_tdens_deriv
-                y_tdens_deriv2 = np.einsum(
-                    "ia,ap,rdiq->rdpq",
-                    y_coeff,
-                    mo_coeff[self.nfc + self.noa :, :],
-                    mo_coeff_deriv[:, :, : self.nfc + self.noa, :],
+                y_tdens_deriv2 = (
+                    mo_coeff[self.nfc + self.noa :, :].T
+                    @ y_coeff.T
+                    @ mo_coeff_deriv[:, :, : self.nfc + self.noa, :]
                 )
-                y_tdens_deriv3 = np.einsum(
-                    "ia,rdap,iq->rdpq",
-                    y_coeff,
-                    mo_coeff_deriv[:, :, self.nfc + self.noa :, :],
-                    mo_coeff[: self.nfc + self.noa, :],
-                )
+                y_tdens_deriv3 = (
+                    mo_coeff[: self.nfc + self.noa, :].T
+                    @ y_coeff
+                    @ mo_coeff_deriv[:, :, self.nfc + self.noa :, :]
+                ).transpose(0, 1, 3, 2)
                 y_tdens_deriv -= y_tdens_deriv2 + y_tdens_deriv3
 
-                y_coeff_deriv = np.einsum(
-                    "rdqp,ip,aq->rdia",
-                    y_tdens_deriv,
-                    mo_coeff[: self.nfc + self.noa, :] @ ao_ovlp,
-                    mo_coeff[self.nfc + self.noa :, :] @ ao_ovlp,
-                )
+                y_coeff_deriv = (
+                    mo_coeff[self.nfc + self.noa :, :]
+                    @ ao_ovlp
+                    @ y_tdens_deriv
+                    @ (mo_coeff[: self.nfc + self.noa, :] @ ao_ovlp).T
+                ).transpose(0, 1, 3, 2)
                 self._y_coeff_deriv = y_coeff_deriv
 
         except Exception as e:
