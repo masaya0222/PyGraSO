@@ -304,19 +304,26 @@ class gaussian_perser(abstract_parser):
         return self._mo_coeff
 
     def get_ao_ovlp(self):
-        return self.get_ao_ovlp_and_deriv()[0]
-
-    def get_ao_ovlp_deriv(self):
-        return self.get_ao_ovlp_and_deriv()[1]
-
-    def get_ao_ovlp_and_deriv(self):
-        if (self._ao_ovlp is not None) and (self._ao_ovlp_deriv is not None):
-            return self._ao_ovlp, self._ao_ovlp_deriv
+        if self._ao_ovlp is not None:
+            return self._ao_ovlp
         try:
             num_AO = self.nbasis * (self.nbasis + 1) // 2
             ao_ovlp = self.rwf_parser.parse(self.rwf_parser.AO_OVERLAP, num_AO)
             ao_ovlp = [float(c.replace("D", "E")) for c in ao_ovlp]
             ao_ovlp = flatten_to_symmetric(ao_ovlp, self.nbasis)
+            self._ao_ovlp = ao_ovlp
+        except Exception as e:
+            raise ValueError(f"Error occur while reading ao_ovlp:{e}")
+        return self._ao_ovlp
+
+    def get_ao_ovlp_deriv(self):
+        if self._ao_ovlp_deriv is not None:
+            self._ao_ovlp_deriv
+        try:
+            num_AO = self.nbasis * (self.nbasis + 1) // 2
+            # ao_ovlp = self.rwf_parser.parse(self.rwf_parser.AO_OVERLAP, num_AO)
+            # ao_ovlp = [float(c.replace("D", "E")) for c in ao_ovlp]
+            # ao_ovlp = flatten_to_symmetric(ao_ovlp, self.nbasis)
 
             num_AO_deriv = num_AO * 3
             ao_ovlp_deriv = self.rwf_parser.parse(
@@ -345,11 +352,11 @@ class gaussian_perser(abstract_parser):
                             ao_ovlp_deriv[self.basis_idx[k], i, j, k] = ao_ovlp_deriv[
                                 self.basis_idx[k], i, k, j
                             ] = +v
-            self._ao_ovlp = ao_ovlp
+
             self._ao_ovlp_deriv = ao_ovlp_deriv
         except Exception as e:
-            raise ValueError(f"Error occur while reading ao_ovlp and ao_ovlp_deriv:{e}")
-        return self._ao_ovlp, self._ao_ovlp_deriv
+            raise ValueError(f"Error occur while reading ao_ovlp_deriv:{e}")
+        return self._ao_ovlp_deriv
 
     def get_mo_coeff_U(self):
         if self._mo_coeff_U is not None:
