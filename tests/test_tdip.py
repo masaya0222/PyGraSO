@@ -27,7 +27,7 @@ def test_h2_tda_tdip():
     mo_coeff_a = mo_coeff[g_parser.nfc + g_parser.noa :, :]
 
     x_coeff = g_parser.get_xy_coeff()
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser.read_basis())
     ao_dip = ao_calculator.get_ao_dip()
 
     calc_tdip = -2.0 * np.einsum(
@@ -89,7 +89,7 @@ def test_h2_tda_tdip_deriv_anal():
     x_coeff = g_parser.get_xy_coeff()
     x_coeff_deriv = g_parser.get_xy_coeff_deriv()
 
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser.read_basis())
     ao_dip = ao_calculator.get_ao_dip()
     ao_dip_deriv = ao_calculator.get_ao_dip_deriv()
 
@@ -176,7 +176,7 @@ def test_h2_td_tdip():
 
     x_coeff, y_coeff = g_parser.get_xy_coeff()
     xpy_coeff = x_coeff + y_coeff
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser.read_basis())
     ao_dip = ao_calculator.get_ao_dip()
 
     calc_tdip = -2.0 * np.einsum(
@@ -241,7 +241,7 @@ def test_h2_td_tdip_deriv_anal():
     x_coeff_deriv, y_coeff_deriv = g_parser.get_xy_coeff_deriv()
     xpy_coeff_deriv = x_coeff_deriv + y_coeff_deriv
 
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser.read_basis())
     ao_dip = ao_calculator.get_ao_dip()
     ao_dip_deriv = ao_calculator.get_ao_dip_deriv()
 
@@ -339,7 +339,7 @@ def test_h2o_tda_tdip():
     mo_coeff_a = mo_coeff[g_parser.nfc + g_parser.noa :, :]
 
     x_coeff = g_parser.get_xy_coeff()
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser.read_basis())
     ao_dip = ao_calculator.get_ao_dip()
 
     calc_tdip = -2.0 * np.einsum(
@@ -414,7 +414,7 @@ def test_h2o_tda_tdip_deriv_anal():
     x_coeff = g_parser.get_xy_coeff()
     x_coeff_deriv = g_parser.get_xy_coeff_deriv()
 
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser.read_basis())
     ao_dip = ao_calculator.get_ao_dip()
     ao_dip_deriv = ao_calculator.get_ao_dip_deriv()
 
@@ -519,7 +519,7 @@ def test_h2o_td_tdip():
 
     x_coeff, y_coeff = g_parser.get_xy_coeff()
     xpy_coeff = x_coeff + y_coeff
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser.read_basis())
     ao_dip = ao_calculator.get_ao_dip()
 
     calc_tdip = -2.0 * np.einsum(
@@ -596,7 +596,7 @@ def test_h2o_td_tdip_deriv_anal():
     x_coeff_deriv, y_coeff_deriv = g_parser.get_xy_coeff_deriv()
     xpy_coeff_deriv = x_coeff_deriv + y_coeff_deriv
 
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser.read_basis())
     ao_dip = ao_calculator.get_ao_dip()
     ao_dip_deriv = ao_calculator.get_ao_dip_deriv()
 

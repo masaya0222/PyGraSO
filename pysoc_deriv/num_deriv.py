@@ -16,6 +16,7 @@ def generate_input_file(
     calc_type="td",
     functional="PBE1PBE",
     basis="6-31G",
+    mem=2,
     old_chk="",
 ):
     with open(inp_file_name, "w") as f:
@@ -28,9 +29,9 @@ def generate_input_file(
             triplet = "Triplet,"
         else:
             triplet = ""
-        root = f"#p {calc_type}({triplet}nstates=6,root=1,conver=6) {guess} {functional}/{basis} 6D 10F nosymm GFInput scf=tight"
+        root = f"#p {calc_type}({triplet}nstates=6,root=1,conver=6) {guess} {functional}/{basis} 6D 10F nosymm GFInput scf=tight IOP(10/95=9)"
         f.write(f"""%Chk={mol_name}.chk
-%Mem=2GB
+%Mem={mem}GB
 %rwf={mol_name}.rwf
 %NProcShared=32
 {root}
@@ -220,7 +221,7 @@ class numerical_deriv:
                         prop = g_parser.get_tdip()
                     if property_name == "ao_soc":
                         ao_calculator = calc_ao_element(
-                            self.atoms, pert_coords, basis=self.basis
+                            self.atoms, pert_coords, basis=g_parser.read_basis()
                         )
                         prop = ao_calculator.get_ao_soc()
                     if property_name == "soc_s0t1":
@@ -236,7 +237,6 @@ class numerical_deriv:
                             pert_coords,
                             pert_t1_log_file_name,
                             pert_t1_rwf_file_name,
-                            basis=self.basis,
                         )
                     if property_name == "soc_s1t1":
                         pert_mol_name_t1 = os.path.join(
@@ -261,7 +261,6 @@ class numerical_deriv:
                             pert_s1_rwf_file_name,
                             pert_t1_log_file_name,
                             pert_t1_rwf_file_name,
-                            basis=self.basis,
                         )
                     properties.append(prop)
                 grad = five_point_derivative(properties, self.step_size)

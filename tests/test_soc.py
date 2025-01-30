@@ -29,7 +29,7 @@ def test_h2o_td_soc():
 
     mo_coeff = g_parser_s1.get_mo_coeff()
 
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser_t1.read_basis())
     ao_soc = ao_calculator.get_ao_soc()
     mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
 
@@ -277,7 +277,7 @@ def test_h2o_d_td_soc():
 
     mo_coeff = g_parser_s1.get_mo_coeff()
 
-    ao_calculator = calc_ao_element(atoms, coordinates, basis="6-31G(d)")
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser_t1.read_basis())
     ao_soc = ao_calculator.get_ao_soc()
     mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
 
@@ -372,7 +372,7 @@ def test_ch2o_td_soc():
 
     mo_coeff = g_parser_s1.get_mo_coeff()
 
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser_t1.read_basis())
     ao_soc = ao_calculator.get_ao_soc()
     mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
 

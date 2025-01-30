@@ -15,7 +15,7 @@ from pyscf import gto, lib
 
 
 class calc_ao_element:
-    def __init__(self, atoms, coordinates, basis="6-31G"):
+    def __init__(self, atoms, coordinates, basis=None):
         self.atoms = atoms
         self.coordinates = coordinates
         self.basis = basis
@@ -47,30 +47,37 @@ class calc_ao_element:
         return mol
 
     def setup_permu(self):
+        # In pyscf, the order of p orbital is [px,py,pz], the order of d orbital is [dxx,dxy,dxz,dyy,dyz,dzz]
+        # In Gaussian16, the order of p orbital is [px,py,pz], the order of d orbital is [dxx,dyy,dzz,dxy,dxz,dyz]
         permu_tmp = []
         basis_idx = []
-        angular2num = {
-            "s": "0",
-            "px": "1",
-            "py": "2",
-            "pz": "3",
-            "dxx": "4",
-            "dyy": "5",
-            "dzz": "6",
-            "dxy": "7",
-            "dxz": "8",
-            "dyz": "9",
-        }
-        for i, ao_label in enumerate(self.mol.ao_labels()):
-            atom_idx, atom_symbol, orb_type = ao_label.split()
-            for angular_symbol in angular2num.keys():
-                if angular_symbol in orb_type:
-                    orb_type = orb_type.replace(
-                        angular_symbol, angular2num[angular_symbol]
-                    )
-            permu_tmp.append([atom_idx + orb_type, i])
-            basis_idx.append(int(atom_idx))
-        permu = np.array([j for (i, j) in sorted(permu_tmp)])
+        angular2order = [[0], [0, 1, 2], [0, 3, 5, 1, 2, 4]]
+        angular2length = [1, 3, 6]
+        permu = []
+        base_idx = 0
+        for i in range(self.mol.natm):
+            basis = self.mol.basis[self.mol.atom_symbol(i)]
+            angular_counter = [0, 0, 0]
+
+            pyscf2gau = []
+            for j, bas in enumerate(basis):
+                l = bas[0]
+                assert l < 3, "This code is not implemented for f function"
+                pyscf2gau.append([l * 10 + angular_counter[l], j])
+                angular_counter[l] += 1
+                basis_idx.extend([i] * angular2length[l])
+
+            pyscf2gau = np.array([j for (i, j) in sorted(pyscf2gau)])
+            permu_tmp = []
+            for idx in pyscf2gau:
+                bas = basis[idx]
+                l = bas[0]
+                permu_tmp.append([idx, [m + base_idx for m in angular2order[l]]])
+                base_idx += angular2length[l]
+            permu_tmp = [j for (i, j) in sorted(permu_tmp)]
+            for pt in permu_tmp:
+                permu += pt
+        permu = np.array(permu)
         return permu, basis_idx
 
     def get_ao_ovlp(self):
@@ -136,7 +143,7 @@ class calc_ao_element:
             )
             self._ao_dip_deriv = ao_dip_deriv
         except Exception as e:
-            raise ValueError(f"Error occur while reading ao_ovlp and ao_dip:{e}")
+            raise ValueError(f"Error occur while reading ao_dip_deriv:{e}")
         return self._ao_dip_deriv
 
     def get_ao_soc(self):
@@ -154,8 +161,9 @@ class calc_ao_element:
                 ao_soc / self._ao_norm[None, None, :] / self._ao_norm[None, :, None]
             )
             self._ao_soc = ao_soc
+
         except Exception as e:
-            raise ValueError(f"Error occur while reading ao_ovlp and ao_soc:{e}")
+            raise ValueError(f"Error occur while reading ao_soc:{e}")
         return self._ao_soc
 
     def get_ao_soc_deriv(self):
@@ -233,5 +241,5 @@ class calc_ao_element:
             )
             self._ao_soc_deriv = ao_soc_deriv
         except Exception as e:
-            raise ValueError(f"Error occur while reading ao_ovlp and ao_soc_deriv:{e}")
+            raise ValueError(f"Error occur while reading ao_soc_deriv:{e}")
         return self._ao_soc_deriv

@@ -14,7 +14,7 @@ def calc_soc_s0t1(
     t1_log_file_name,
     t1_rwf_file_name,
     normalize=True,
-    basis="6-31G",
+    basis=None,
 ):
     g_parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
     mo_coeff = g_parser_t1.get_mo_coeff()
@@ -25,9 +25,11 @@ def calc_soc_s0t1(
         xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
     # xpy_coeff_t1[np.abs(xpy_coeff_t1) < coeff_thresh] = 0.0
 
-    ao_calculator = calc_ao_element(atoms, coordinates, basis=basis)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser_t1.read_basis())
     ao_soc = ao_calculator.get_ao_soc()
-    mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
+
+    # mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
+    mo_soc = mo_coeff @ ao_soc @ mo_coeff.T
 
     mo_soc *= 0.5 * fine_stru**2
     mo_soc_ij = mo_soc[
@@ -40,11 +42,17 @@ def calc_soc_s0t1(
         :, g_parser_t1.nfc + g_parser_t1.noa :, g_parser_t1.nfc + g_parser_t1.noa :
     ]
 
+    # soc_s0t1_1 = (1.0 / np.sqrt(2)) * complex(
+    #     -np.einsum("ia,ia->", xpy_coeff_t1, mo_soc_ia[0, :, :]),
+    #     -np.einsum("ia,ia->", xpy_coeff_t1, mo_soc_ia[1, :, :]),
+    # )
     soc_s0t1_1 = (1.0 / np.sqrt(2)) * complex(
-        -np.einsum("ia,ia->", xpy_coeff_t1, mo_soc_ia[0, :, :]),
-        -np.einsum("ia,ia->", xpy_coeff_t1, mo_soc_ia[1, :, :]),
+        -np.trace(xpy_coeff_t1.T @ mo_soc_ia[0, :, :]),
+        -np.trace(xpy_coeff_t1.T @ mo_soc_ia[1, :, :]),
     )
-    soc_s0t1_2 = complex(np.einsum("ia,ia->", xpy_coeff_t1, mo_soc_ia[2, :, :]), 0.0)
+    # soc_s0t1_2 = complex(np.einsum("ia,ia->", xpy_coeff_t1, mo_soc_ia[2, :, :]), 0.0)
+    soc_s0t1_2 = complex(np.trace(xpy_coeff_t1.T @ mo_soc_ia[2, :, :]), 0.0)
+
     soc_s0t1_3 = -1.0 * soc_s0t1_1
     soc_s0t1 = np.array([soc_s0t1_1, soc_s0t1_2, soc_s0t1_3])
     soc_s0t1 *= au2wavnum
@@ -60,7 +68,7 @@ def calc_soc_s1t1(
     t1_log_file_name,
     t1_rwf_file_name,
     normalize=True,
-    basis="6-31G",
+    basis=None,
 ):
     g_parser_s1 = gaussian_perser(s1_log_file_name, s1_rwf_file_name)
     mo_coeff = g_parser_s1.get_mo_coeff()
@@ -79,7 +87,7 @@ def calc_soc_s1t1(
         xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
     # xpy_coeff_t1[np.abs(xpy_coeff_t1) < coeff_thresh] = 0.0
 
-    ao_calculator = calc_ao_element(atoms, coordinates, basis=basis)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser_t1.read_basis())
     ao_soc = ao_calculator.get_ao_soc()
     mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
 
@@ -127,7 +135,7 @@ def calc_soc_s0t1_deriv(
     t1_log_file_name,
     t1_rwf_file_name,
     normalize=True,
-    basis="6-31G",
+    basis=None,
 ):
     g_parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
     mo_coeff = g_parser_t1.get_mo_coeff()
@@ -156,7 +164,7 @@ def calc_soc_s0t1_deriv(
             )
         ) / norm_t1
 
-    ao_calculator = calc_ao_element(atoms, coordinates, basis=basis)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser_t1.read_basis())
     ao_soc = ao_calculator.get_ao_soc()
     ao_soc_deriv = ao_calculator.get_ao_soc_deriv()
 
@@ -232,7 +240,7 @@ def calc_soc_s1t1_deriv(
     t1_log_file_name,
     t1_rwf_file_name,
     normalize=True,
-    basis="6-31G",
+    basis=None,
 ):
     g_parser_s1 = gaussian_perser(s1_log_file_name, s1_rwf_file_name)
     mo_coeff = g_parser_s1.get_mo_coeff()
@@ -279,7 +287,7 @@ def calc_soc_s1t1_deriv(
             )
         ) / norm_t1
 
-    ao_calculator = calc_ao_element(atoms, coordinates, basis=basis)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser_t1.read_basis())
     ao_soc = ao_calculator.get_ao_soc()
     ao_soc_deriv = ao_calculator.get_ao_soc_deriv()
 

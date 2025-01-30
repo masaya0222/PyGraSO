@@ -25,7 +25,11 @@ def test_h2o_ao_soc_deriv():
     )
     ao_soc_deriv_num = num_deriv.execute_num_deriv("ao_soc")
 
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.log")
+    rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.rwf")
+    g_parser = gaussian_perser(log_file_name, rwf_file_name)
+
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser.read_basis())
     ao_soc_deriv_anal = ao_calculator.get_ao_soc_deriv()
 
     assert np.allclose(ao_soc_deriv_anal, ao_soc_deriv_num)
@@ -54,7 +58,10 @@ def test_h2o_d_ao_soc_deriv():
     )
     ao_soc_deriv_num = num_deriv.execute_num_deriv("ao_soc")
 
-    ao_calculator = calc_ao_element(atoms, coordinates, basis="6-31G(d)")
+    log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.log")
+    rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.rwf")
+    g_parser = gaussian_perser(log_file_name, rwf_file_name)
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser.read_basis())
     ao_soc_deriv_anal = ao_calculator.get_ao_soc_deriv()
     assert np.allclose(ao_soc_deriv_anal, ao_soc_deriv_num)
 
@@ -78,7 +85,11 @@ def test_ch2o_ao_soc_deriv():
     )
     ao_soc_deriv_num = num_deriv.execute_num_deriv("ao_soc")
 
-    ao_calculator = calc_ao_element(atoms, coordinates)
+    log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.log")
+    rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.rwf")
+    g_parser = gaussian_perser(log_file_name, rwf_file_name)
+
+    ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser.read_basis())
     ao_soc_deriv_anal = ao_calculator.get_ao_soc_deriv()
 
     assert np.allclose(ao_soc_deriv_anal, ao_soc_deriv_num)
