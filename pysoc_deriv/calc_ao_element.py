@@ -18,7 +18,7 @@ def sozeff(atom, zeff_type="one"):
     """
     与えられた原子番号に対して、有効核電荷 (Z_eff) を計算する。
     """
-    assert zeff_type in ["one", "orca", "pyscf"], f"{zeff_type=} is not valid"
+    assert zeff_type in ["one", "orca", "pysoc"], f"{zeff_type=} is not valid"
     neval = {
         1: 1,
         2: 2,
@@ -78,7 +78,7 @@ def sozeff(atom, zeff_type="one"):
     if zeff_type == "one":
         return atom
 
-    if zeff_type == "pyscf":
+    if zeff_type == "pysoc":
         if atom == 1:
             return 1.0
         elif atom == 2:
@@ -305,7 +305,9 @@ class calc_ao_element:
                     ao_soc_tmp[np.ix_(np.arange(3), self.permu_basis, self.permu_basis)]
                 )
                 ao_soc_tmp = (
-                    ao_soc_tmp / self._ao_norm[None, None, :] / self._ao_norm[None, :, None]
+                    ao_soc_tmp
+                    / self._ao_norm[None, None, :]
+                    / self._ao_norm[None, :, None]
                 )
                 ao_soc.append(ao_soc_tmp * zeff_list[k])
             ao_soc = sum(ao_soc)
