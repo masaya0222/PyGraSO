@@ -14,6 +14,124 @@ _cint = np.ctypeslib.load_library(
 from pyscf import gto, lib
 
 
+def sozeff(atom, zeff_type="one"):
+    """
+    与えられた原子番号に対して、有効核電荷 (Z_eff) を計算する。
+    """
+    assert zeff_type in ["one", "orca", "pyscf"], f"{zeff_type=} is not valid"
+    neval = {
+        1: 1,
+        2: 2,
+        3: 1,
+        4: 2,
+        5: 3,
+        6: 4,
+        7: 5,
+        8: 6,
+        9: 7,
+        10: 8,
+        11: 1,
+        12: 2,
+        13: 3,
+        14: 4,
+        15: 5,
+        16: 6,
+        17: 7,
+        18: 8,
+        19: 1,
+        20: 2,
+        21: 3,
+        22: 4,
+        23: 5,
+        24: 6,
+        25: 7,
+        26: 8,
+        27: 9,
+        28: 10,
+        29: 11,
+        30: 12,
+        31: 3,
+        32: 4,
+        33: 5,
+        34: 6,
+        35: 7,
+        36: 8,
+        37: 1,
+        38: 2,
+        39: 3,
+        40: 4,
+        41: 5,
+        42: 6,
+        43: 7,
+        44: 8,
+        45: 9,
+        46: 10,
+        47: 11,
+        48: 12,
+        49: 3,
+        50: 4,
+        51: 5,
+        52: 6,
+        53: 7,
+        54: 8,
+    }
+    if zeff_type == "one":
+        return atom
+
+    if zeff_type == "pyscf":
+        if atom == 1:
+            return 1.0
+        elif atom == 2:
+            return 2.0
+        elif 3 <= atom <= 10:
+            return (0.2517 + 0.0626 * neval[atom]) * atom
+        elif 11 <= atom <= 18:
+            return (0.7213 + 0.0144 * neval[atom]) * atom
+        elif (19 <= atom <= 20) or (31 <= atom <= 36):
+            return (0.8791 + 0.0039 * neval[atom]) * atom
+        elif (37 <= atom <= 38) or (49 <= atom <= 54):
+            return (0.9228 + 0.0017 * neval[atom]) * atom
+        elif atom == 26:
+            return 0.583289 * atom
+        elif atom == 30:
+            return 330.0
+        elif 21 <= atom <= 30:
+            return atom * (0.385 + 0.025 * (neval[atom] - 2))
+        elif 39 <= atom <= 48:
+            return atom * (4.680 + 0.060 * (neval[atom] - 2))
+        elif atom == 72:
+            return 1025.28
+        elif atom == 73:
+            return 1049.74
+        elif atom == 74:
+            return 1074.48
+        elif atom == 75:
+            return 1099.5
+        elif atom == 76:
+            return 1124.8
+        elif atom == 77:
+            return 1150.38
+        elif atom == 78:
+            return 1176.24
+        elif atom == 79:
+            return 1202.38
+        elif atom == 80:
+            return 1228.8
+        else:
+            raise ValueError(f"SOZEFF is not available for atomic number {atom}")
+    if zeff_type == "orca":
+        if atom == 1:
+            return 1.0
+        elif atom == 2:
+            return 2.0
+        elif 3 <= atom < 10:
+            return (0.4 + 0.05 * neval[atom]) * atom
+        elif 11 <= atom <= 18:
+            return (0.925 - 0.0125 * neval[atom]) * atom
+        else:
+            raise ValueError(f"SOZEFF is not available for atomic number {atom}")
+
+
 class calc_ao_element:
     def __init__(self, atoms, coordinates, basis=None):
         self.atoms = atoms
@@ -146,11 +264,12 @@ class calc_ao_element:
             raise ValueError(f"Error occur while reading ao_dip_deriv:{e}")
         return self._ao_dip_deriv
 
-    def get_ao_soc(self):
+    def get_ao_soc_old(self):
         if self._ao_soc is not None:
             return self._ao_soc
         try:
             intor_name = "int1e_pnucxp_cart"
+
             ao_soc_tmp = gto.getints(
                 intor_name, self.mol._atm, self.mol._bas, env=self.mol._env
             )
@@ -162,6 +281,35 @@ class calc_ao_element:
             )
             self._ao_soc = ao_soc
 
+        except Exception as e:
+            raise ValueError(f"Error occur while reading ao_soc:{e}")
+        return self._ao_soc
+
+    def get_ao_soc(self, Z="one"):
+        if self._ao_soc is not None:
+            return self._ao_soc
+        try:
+            zeff_list = [
+                sozeff(self.mol.atom_charge(i), zeff_type=Z) for i in range(self.natoms)
+            ]
+
+            ao_soc = []
+
+            intor_name = "int1e_prinvxp_cart"
+            for k in range(self.mol.natm):
+                self.mol.set_rinv_origin(self.mol.atom_coord(k))
+                ao_soc_tmp = gto.getints(
+                    intor_name, self.mol._atm, self.mol._bas, env=self.mol._env
+                )
+                ao_soc_tmp = 1.0 * np.real(
+                    ao_soc_tmp[np.ix_(np.arange(3), self.permu_basis, self.permu_basis)]
+                )
+                ao_soc_tmp = (
+                    ao_soc_tmp / self._ao_norm[None, None, :] / self._ao_norm[None, :, None]
+                )
+                ao_soc.append(ao_soc_tmp * zeff_list[k])
+            ao_soc = sum(ao_soc)
+            self._ao_soc = ao_soc
         except Exception as e:
             raise ValueError(f"Error occur while reading ao_soc:{e}")
         return self._ao_soc

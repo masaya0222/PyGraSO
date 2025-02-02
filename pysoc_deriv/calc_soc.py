@@ -15,6 +15,7 @@ def calc_soc_s0t1(
     t1_rwf_file_name,
     normalize=True,
     basis=None,
+    Z="one",
 ):
     g_parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
     mo_coeff = g_parser_t1.get_mo_coeff()
@@ -26,7 +27,7 @@ def calc_soc_s0t1(
     # xpy_coeff_t1[np.abs(xpy_coeff_t1) < coeff_thresh] = 0.0
 
     ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser_t1.read_basis())
-    ao_soc = ao_calculator.get_ao_soc()
+    ao_soc = ao_calculator.get_ao_soc(Z=Z)
 
     mo_soc = mo_coeff @ ao_soc @ mo_coeff.T
 
@@ -63,6 +64,7 @@ def calc_soc_s1t1(
     t1_rwf_file_name,
     normalize=True,
     basis=None,
+    Z="one",
 ):
     g_parser_s1 = gaussian_perser(s1_log_file_name, s1_rwf_file_name)
     mo_coeff = g_parser_s1.get_mo_coeff()
@@ -82,7 +84,7 @@ def calc_soc_s1t1(
     # xpy_coeff_t1[np.abs(xpy_coeff_t1) < coeff_thresh] = 0.0
 
     ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser_t1.read_basis())
-    ao_soc = ao_calculator.get_ao_soc()
+    ao_soc = ao_calculator.get_ao_soc(Z=Z)
 
     mo_soc = mo_coeff @ ao_soc @ mo_coeff.T
 
