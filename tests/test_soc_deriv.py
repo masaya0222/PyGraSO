@@ -107,11 +107,10 @@ def test_h2o_td_soc_s0t1_deriv():
 
     log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.log")
     rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.rwf")
+    parser_t1 = gaussian_perser(log_file_name, rwf_file_name)
 
     calc_dir = os.path.join(current_dir, f"data/num/")
-    soc_s0t1_deriv_anal = calc_soc_s0t1_deriv(
-        atoms, coordinates, log_file_name, rwf_file_name
-    )
+    soc_s0t1_deriv_anal = calc_soc_s0t1_deriv(atoms, coordinates, parser_t1)
 
     num_deriv = numerical_deriv(mol_name, atoms, coordinates, calc_dir=calc_dir)
     soc_s0t1_deriv_num = num_deriv.execute_num_deriv("soc_s0t1")
@@ -133,16 +132,11 @@ def test_h2o_td_soc_s1t1_deriv():
     s1_rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_s1.rwf")
     t1_log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.log")
     t1_rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.rwf")
+    parser_s1 = gaussian_perser(s1_log_file_name, s1_rwf_file_name)
+    parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
 
     calc_dir = os.path.join(current_dir, f"data/num/")
-    soc_s1t1_deriv_anal = calc_soc_s1t1_deriv(
-        atoms,
-        coordinates,
-        s1_log_file_name,
-        s1_rwf_file_name,
-        t1_log_file_name,
-        t1_rwf_file_name,
-    )
+    soc_s1t1_deriv_anal = calc_soc_s1t1_deriv(atoms, coordinates, parser_s1, parser_t1)
 
     num_deriv = numerical_deriv(mol_name, atoms, coordinates, calc_dir=calc_dir)
     soc_s1t1_deriv_num = num_deriv.execute_num_deriv("soc_s1t1")
@@ -162,10 +156,11 @@ def test_h2o_d_td_soc_s0t1_deriv():
 
     log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.log")
     rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.rwf")
+    parser_t1 = gaussian_perser(log_file_name, rwf_file_name)
 
     calc_dir = os.path.join(current_dir, f"data/num/")
     soc_s0t1_deriv_anal = calc_soc_s0t1_deriv(
-        atoms, coordinates, log_file_name, rwf_file_name, basis="6-31G(d)"
+        atoms, coordinates, parser_t1, basis="6-31G(d)"
     )
 
     num_deriv = numerical_deriv(
@@ -190,15 +185,15 @@ def test_h2o_d_td_soc_s1t1_deriv():
     s1_rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_s1.rwf")
     t1_log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.log")
     t1_rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.rwf")
+    parser_s1 = gaussian_perser(s1_log_file_name, s1_rwf_file_name)
+    parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
 
     calc_dir = os.path.join(current_dir, f"data/num/")
     soc_s1t1_deriv_anal = calc_soc_s1t1_deriv(
         atoms,
         coordinates,
-        s1_log_file_name,
-        s1_rwf_file_name,
-        t1_log_file_name,
-        t1_rwf_file_name,
+        parser_s1,
+        parser_t1,
         basis="6-31G(d)",
     )
 
@@ -223,11 +218,10 @@ def test_ch2o_td_soc_s0t1_deriv():
     mol_name = "ch2o_td"
     log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.log")
     rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.rwf")
+    parser_t1 = gaussian_perser(log_file_name, rwf_file_name)
 
     calc_dir = os.path.join(current_dir, f"data/num/")
-    soc_s0t1_deriv_anal = calc_soc_s0t1_deriv(
-        atoms, coordinates, log_file_name, rwf_file_name
-    )
+    soc_s0t1_deriv_anal = calc_soc_s0t1_deriv(atoms, coordinates, parser_t1)
 
     num_deriv = numerical_deriv(mol_name, atoms, coordinates, calc_dir=calc_dir)
     soc_s0t1_deriv_num = num_deriv.execute_num_deriv("soc_s0t1")
@@ -251,16 +245,11 @@ def test_ch2o_td_soc_s1t1_deriv():
     s1_rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_s1.rwf")
     t1_log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.log")
     t1_rwf_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.rwf")
+    parser_s1 = gaussian_perser(s1_log_file_name, s1_rwf_file_name)
+    parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
 
     calc_dir = os.path.join(current_dir, f"data/num/")
-    soc_s1t1_deriv_anal = calc_soc_s1t1_deriv(
-        atoms,
-        coordinates,
-        s1_log_file_name,
-        s1_rwf_file_name,
-        t1_log_file_name,
-        t1_rwf_file_name,
-    )
+    soc_s1t1_deriv_anal = calc_soc_s1t1_deriv(atoms, coordinates, parser_s1, parser_t1)
 
     num_deriv = numerical_deriv(mol_name, atoms, coordinates, calc_dir=calc_dir)
     soc_s1t1_deriv_num = num_deriv.execute_num_deriv("soc_s1t1")

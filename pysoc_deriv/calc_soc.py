@@ -11,13 +11,11 @@ coeff_thresh = 1e-5
 def calc_soc_s0t1(
     atoms,
     coordinates,
-    t1_log_file_name,
-    t1_rwf_file_name,
+    g_parser_t1,
     normalize=True,
     basis=None,
     Z="one",
 ):
-    g_parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
     mo_coeff = g_parser_t1.get_mo_coeff()
     x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
     xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
@@ -61,15 +59,12 @@ def calc_soc_s0t1(
 def calc_soc_s1t1(
     atoms,
     coordinates,
-    s1_log_file_name,
-    s1_rwf_file_name,
-    t1_log_file_name,
-    t1_rwf_file_name,
+    g_parser_s1,
+    g_parser_t1,
     normalize=True,
     basis=None,
     Z="one",
 ):
-    g_parser_s1 = gaussian_perser(s1_log_file_name, s1_rwf_file_name)
     mo_coeff = g_parser_s1.get_mo_coeff()
     x_coeff_s1, y_coeff_s1 = g_parser_s1.get_xy_coeff()
     xpy_coeff_s1 = x_coeff_s1 + y_coeff_s1
@@ -78,7 +73,6 @@ def calc_soc_s1t1(
         xpy_coeff_s1 = xpy_coeff_s1 / norm_s1
     # xpy_coeff_s1[np.abs(xpy_coeff_s1) < coeff_thresh] = 0.0
 
-    g_parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
     x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
     xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
     if normalize:
@@ -148,12 +142,10 @@ def calc_soc_s1t1(
 def calc_soc_s0t1_deriv(
     atoms,
     coordinates,
-    t1_log_file_name,
-    t1_rwf_file_name,
+    g_parser_t1,
     normalize=True,
     basis=None,
 ):
-    g_parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
     mo_coeff = g_parser_t1.get_mo_coeff()
     mo_coeff_deriv = g_parser_t1.get_mo_coeff_deriv()
 
@@ -254,14 +246,11 @@ def calc_soc_s0t1_deriv(
 def calc_soc_s1t1_deriv(
     atoms,
     coordinates,
-    s1_log_file_name,
-    s1_rwf_file_name,
-    t1_log_file_name,
-    t1_rwf_file_name,
+    g_parser_s1,
+    g_parser_t1,
     normalize=True,
     basis=None,
 ):
-    g_parser_s1 = gaussian_perser(s1_log_file_name, s1_rwf_file_name)
     mo_coeff = g_parser_s1.get_mo_coeff()
     mo_coeff_deriv = g_parser_s1.get_mo_coeff_deriv()
     mo_coeff_i = mo_coeff[: g_parser_s1.nfc + g_parser_s1.noa, :]
@@ -287,7 +276,6 @@ def calc_soc_s1t1_deriv(
             )
         ) / norm_s1
 
-    g_parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
     x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
     xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
     if normalize:

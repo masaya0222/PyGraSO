@@ -232,12 +232,10 @@ class numerical_deriv:
                         pert_t1_inp_file_name = f"{pert_mol_name_t1}.gjf"
                         pert_t1_log_file_name = f"{pert_mol_name_t1}.log"
                         pert_t1_rwf_file_name = f"{pert_mol_name_t1}.rwf"
-                        prop = calc_soc_s0t1(
-                            self.atoms,
-                            pert_coords,
-                            pert_t1_log_file_name,
-                            pert_t1_rwf_file_name,
+                        g_parser_t1 = gaussian_perser(
+                            pert_t1_log_file_name, pert_t1_rwf_file_name
                         )
+                        prop = calc_soc_s0t1(self.atoms, pert_coords, g_parser_t1)
                     if property_name == "soc_s1t1":
                         pert_mol_name_t1 = os.path.join(
                             self.calc_dir,
@@ -246,7 +244,9 @@ class numerical_deriv:
                         pert_t1_inp_file_name = f"{pert_mol_name_t1}.gjf"
                         pert_t1_log_file_name = f"{pert_mol_name_t1}.log"
                         pert_t1_rwf_file_name = f"{pert_mol_name_t1}.rwf"
-
+                        g_parser_t1 = gaussian_perser(
+                            pert_t1_log_file_name, pert_t1_rwf_file_name
+                        )
                         pert_mol_name_s1 = os.path.join(
                             self.calc_dir,
                             f"{self.mol_name}_s1_{axis}_atom{atom_idx:03d}_delta{delta:+.4f}",
@@ -254,13 +254,11 @@ class numerical_deriv:
                         pert_s1_inp_file_name = f"{pert_mol_name_s1}.gjf"
                         pert_s1_log_file_name = f"{pert_mol_name_s1}.log"
                         pert_s1_rwf_file_name = f"{pert_mol_name_s1}.rwf"
+                        g_parser_s1 = gaussian_perser(
+                            pert_s1_log_file_name, pert_s1_rwf_file_name
+                        )
                         prop = calc_soc_s1t1(
-                            self.atoms,
-                            pert_coords,
-                            pert_s1_log_file_name,
-                            pert_s1_rwf_file_name,
-                            pert_t1_log_file_name,
-                            pert_t1_rwf_file_name,
+                            self.atoms, pert_coords, g_parser_s1, g_parser_t1
                         )
                     properties.append(prop)
                 grad = five_point_derivative(properties, self.step_size)
