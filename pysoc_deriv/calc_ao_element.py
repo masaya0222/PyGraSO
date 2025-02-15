@@ -165,22 +165,29 @@ class calc_ao_element:
         return mol
 
     def setup_permu(self):
-        # In pyscf, the order of p orbital is [px,py,pz], the order of d orbital is [dxx,dxy,dxz,dyy,dyz,dzz]
+        # In pyscf, the order of p orbital is [px,py,pz], the order of d orbital is [dxx,dxy,dxz,dyy,dyz,dzz],
+        # the order of f orbital is [fxxx,fxxy,fxxz,fxyy,fxyz,fxzz,fyyy,fyyz,fyzz,fzzz]
         # In Gaussian16, the order of p orbital is [px,py,pz], the order of d orbital is [dxx,dyy,dzz,dxy,dxz,dyz]
+        # the order of f orbital is [fxxx,fyyy,fzzz,fxyy,fxxy,fxxz,fxzz,fyzz,fyyz,fxyz]
         permu_tmp = []
         basis_idx = []
-        angular2order = [[0], [0, 1, 2], [0, 3, 5, 1, 2, 4]]
-        angular2length = [1, 3, 6]
+        angular2order = [
+            [0],
+            [0, 1, 2],
+            [0, 3, 5, 1, 2, 4],
+            [0, 6, 9, 3, 1, 2, 5, 8, 7, 4],
+        ]
+        angular2length = [1, 3, 6, 10]
         permu = []
         base_idx = 0
         for i in range(self.mol.natm):
             basis = self.mol.basis[self.mol.atom_symbol(i)]
-            angular_counter = [0, 0, 0]
+            angular_counter = [0, 0, 0, 0]
 
             pyscf2gau = []
             for j, bas in enumerate(basis):
                 l = bas[0]
-                assert l < 3, "This code is not implemented for f function"
+                assert l < 4, "This code is not implemented for g function"
                 pyscf2gau.append([l * 10 + angular_counter[l], j])
                 angular_counter[l] += 1
                 basis_idx.extend([i] * angular2length[l])
@@ -310,16 +317,19 @@ class calc_ao_element:
                     / self._ao_norm[None, :, None]
                 )
                 ao_soc.append(ao_soc_tmp * zeff_list[k])
-            ao_soc = sum(ao_soc)
+            ao_soc = sum(ao_soc) * (-1.0j)
             self._ao_soc = ao_soc
         except Exception as e:
             raise ValueError(f"Error occur while reading ao_soc:{e}")
         return self._ao_soc
 
-    def get_ao_soc_deriv(self):
+    def get_ao_soc_deriv(self, Z="one"):
         if self._ao_soc_deriv is not None:
             return self._ao_soc_deriv
         try:
+            zeff_list = [
+                sozeff(self.mol.atom_charge(i), zeff_type=Z) for i in range(self.natoms)
+            ]
             intor_name = "cint1e_prinvxpp_cart"
             fn = getattr(_cint, intor_name)
 
@@ -329,7 +339,6 @@ class calc_ao_element:
             am2nb = [1, 3, 6]
             for k in range(self.mol.natm):
                 self.mol.set_rinv_origin(self.mol.atom_coord(k))
-                Z_k = self.mol._atm[k, 0]
                 idx_i = 0
                 for i in range(self.mol.nbas):
                     am_i = self.mol._bas[i, 1]
@@ -355,7 +364,7 @@ class calc_ao_element:
                             :,
                             idx_i : idx_i + nb_i,
                             idx_j : idx_j + nb_j,
-                        ] = buf * Z_k
+                        ] = buf * zeff_list[k]
                         idx_j += nb_j
                     idx_i += nb_i
 
@@ -389,7 +398,7 @@ class calc_ao_element:
                 / self._ao_norm[None, None, None, None, :]
                 / self._ao_norm[None, None, None, :, None]
             )
-            self._ao_soc_deriv = ao_soc_deriv
+            self._ao_soc_deriv = ao_soc_deriv * (-1.0j)
         except Exception as e:
             raise ValueError(f"Error occur while reading ao_soc_deriv:{e}")
         return self._ao_soc_deriv

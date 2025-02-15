@@ -66,7 +66,7 @@ def test_h2o_td_soc():
     soc_s0t1 *= au2wavnum
     answer = np.array(
         [-0.00000 + 25.48577j, 37.02488 + 0.00000j, 0.00000 - 25.48577j]
-    )  # from pysoc
+    ) * (-1.0j)  # from pysoc
 
     assert np.allclose(soc_s0t1, answer, atol=1e-6, rtol=5e-3)
 
@@ -93,8 +93,8 @@ def test_h2o_td_soc():
     soc_s1t1_3 = -1.0 * soc_s1t1_1
     soc_s1t1 = np.array([soc_s1t1_1, soc_s1t1_2, soc_s1t1_3])
     soc_s1t1 *= au2wavnum
-    answer = np.array(
-        [0.01834 + 0.00000j, 0.00000 + 0.00000j, -0.01834 - 0.00000j]
+    answer = np.array([0.01834 + 0.00000j, 0.00000 + 0.00000j, -0.01834 - 0.00000j]) * (
+        -1.0j
     )  # from pysoc
 
     assert np.allclose(soc_s1t1, answer, atol=1e-6, rtol=5e-3)
@@ -314,7 +314,7 @@ def test_h2o_d_td_soc():
     soc_s0t1 *= au2wavnum
     answer = np.array(
         [0.00000 + 25.15476j, 35.63319 + 0.00000j, 0.00000 - 25.15476j]
-    )  # from pysoc
+    ) * (-1.0j)  # from pysoc
 
     assert np.allclose(soc_s0t1, answer, atol=1e-6, rtol=5e-3)
 
@@ -341,8 +341,8 @@ def test_h2o_d_td_soc():
     soc_s1t1_3 = -1.0 * soc_s1t1_1
     soc_s1t1 = np.array([soc_s1t1_1, soc_s1t1_2, soc_s1t1_3])
     soc_s1t1 *= au2wavnum
-    answer = np.array(
-        [0.03615 + 0.00000j, 0.00000 + 0.00000j, -0.03615 - 0.00000j]
+    answer = np.array([0.03615 + 0.00000j, 0.00000 + 0.00000j, -0.03615 - 0.00000j]) * (
+        -1.0j
     )  # from pysoc
 
     assert np.allclose(soc_s1t1, answer, atol=1e-6, rtol=5e-3)
@@ -409,7 +409,7 @@ def test_ch2o_td_soc():
     soc_s0t1 *= au2wavnum
     answer = np.array(
         [68.05414 + 0.00024j, -0.01202 + 0.00000, -68.05414 - 0.00024j]
-    )  # from pysoc
+    ) * (-1.0j)  # from pysoc
 
     assert np.allclose(soc_s0t1, answer, atol=1e-3)
 
@@ -436,8 +436,8 @@ def test_ch2o_td_soc():
     soc_s1t1_3 = -1.0 * soc_s1t1_1
     soc_s1t1 = np.array([soc_s1t1_1, soc_s1t1_2, soc_s1t1_3])
     soc_s1t1 *= au2wavnum
-    answer = np.array(
-        [0.00000 - 0.00161j, 0.00000 + 0.00000j, -0.00000 + 0.00161j]
+    answer = np.array([0.00000 - 0.00161j, 0.00000 + 0.00000j, -0.00000 + 0.00161j]) * (
+        -1.0j
     )  # from pysoc
 
     assert np.allclose(soc_s1t1, answer, atol=3e-4)

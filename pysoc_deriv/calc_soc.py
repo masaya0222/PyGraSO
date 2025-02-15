@@ -42,13 +42,16 @@ def calc_soc_s0t1(
         :, g_parser_t1.nfc + g_parser_t1.noa :, g_parser_t1.nfc + g_parser_t1.noa :
     ]
 
-    soc_s0t1_1 = (1.0 / np.sqrt(2)) * complex(
-        -np.trace(xpy_coeff_t1.T @ mo_soc_ia[0, :, :]),
-        -np.trace(xpy_coeff_t1.T @ mo_soc_ia[1, :, :]),
+    soc_s0t1_1 = (1.0 / np.sqrt(2)) * (
+        -np.trace(xpy_coeff_t1.T @ mo_soc_ia[0, :, :])
+        - np.trace(xpy_coeff_t1.T @ mo_soc_ia[1, :, :]) * 1.0j
     )
-    soc_s0t1_2 = complex(np.trace(xpy_coeff_t1.T @ mo_soc_ia[2, :, :]), 0.0)
+    soc_s0t1_2 = np.trace(xpy_coeff_t1.T @ mo_soc_ia[2, :, :])
 
-    soc_s0t1_3 = -1.0 * soc_s0t1_1
+    soc_s0t1_3 = (1.0 / np.sqrt(2)) * (
+        np.trace(xpy_coeff_t1.T @ mo_soc_ia[0, :, :])
+        - np.trace(xpy_coeff_t1.T @ mo_soc_ia[1, :, :]) * 1.0j
+    )
     soc_s0t1 = np.array([soc_s0t1_1, soc_s0t1_2, soc_s0t1_3])
     soc_s0t1 *= au2wavnum
 
@@ -99,27 +102,43 @@ def calc_soc_s1t1(
         :, g_parser_t1.nfc + g_parser_t1.noa :, g_parser_t1.nfc + g_parser_t1.noa :
     ]
 
-    soc_s1t1_1 = complex(
+    soc_s1t1_1 = (
         1.0
         / np.sqrt(2.0)
         * np.trace(xpy_coeff_s1.T @ mo_soc_ij[0, :, :].T @ xpy_coeff_t1)
         - 1.0
         / np.sqrt(2.0)
-        * np.trace(xpy_coeff_s1 @ mo_soc_ab[0, :, :] @ xpy_coeff_t1.T),
-        1.0
+        * np.trace(xpy_coeff_s1 @ mo_soc_ab[0, :, :] @ xpy_coeff_t1.T)
+        + 1.0
         / np.sqrt(2.0)
         * np.trace(xpy_coeff_s1.T @ mo_soc_ij[1, :, :].T @ xpy_coeff_t1)
+        * 1.0j
         - 1.0
         / np.sqrt(2.0)
-        * np.trace(xpy_coeff_s1 @ mo_soc_ab[1, :, :] @ xpy_coeff_t1.T),
+        * np.trace(xpy_coeff_s1 @ mo_soc_ab[1, :, :] @ xpy_coeff_t1.T)
+        * 1.0j
     )
 
-    soc_s1t1_2 = complex(
-        -1.0 * np.trace(xpy_coeff_s1.T @ mo_soc_ij[2, :, :].T @ xpy_coeff_t1)
-        + 1.0 * np.trace(xpy_coeff_s1 @ mo_soc_ab[2, :, :] @ xpy_coeff_t1.T),
-        0.0,
+    soc_s1t1_2 = -1.0 * np.trace(
+        xpy_coeff_s1.T @ mo_soc_ij[2, :, :].T @ xpy_coeff_t1
+    ) + 1.0 * np.trace(xpy_coeff_s1 @ mo_soc_ab[2, :, :] @ xpy_coeff_t1.T)
+
+    soc_s1t1_3 = (
+        -1.0
+        / np.sqrt(2.0)
+        * np.trace(xpy_coeff_s1.T @ mo_soc_ij[0, :, :].T @ xpy_coeff_t1)
+        + 1.0
+        / np.sqrt(2.0)
+        * np.trace(xpy_coeff_s1 @ mo_soc_ab[0, :, :] @ xpy_coeff_t1.T)
+        + 1.0
+        / np.sqrt(2.0)
+        * np.trace(xpy_coeff_s1.T @ mo_soc_ij[1, :, :].T @ xpy_coeff_t1)
+        * 1.0j
+        - 1.0
+        / np.sqrt(2.0)
+        * np.trace(xpy_coeff_s1 @ mo_soc_ab[1, :, :] @ xpy_coeff_t1.T)
+        * 1.0j
     )
-    soc_s1t1_3 = -1.0 * soc_s1t1_1
     soc_s1t1 = np.array([soc_s1t1_1, soc_s1t1_2, soc_s1t1_3])
     soc_s1t1 *= au2wavnum
 
@@ -220,8 +239,11 @@ def calc_soc_s0t1_deriv(
     soc_s0t1_2_deriv_re = np.einsum(
         "rdia,ia->rd", xpy_coeff_deriv_t1, mo_soc_ia[2, :, :]
     ) + np.einsum("ia,rdia->rd", xpy_coeff_t1, mo_soc_ia_deriv[:, :, 2, :, :])
-    soc_s0t1_2_deriv = soc_s0t1_2_deriv_re + 0.0j
-    soc_s0t1_3_deriv = -1.0 * soc_s0t1_1_deriv
+    soc_s0t1_2_deriv = soc_s0t1_2_deriv_re
+    soc_s0t1_3_deriv_re = -soc_s0t1_1_deriv_re
+    soc_s0t1_3_deriv_im = soc_s0t1_1_deriv_im
+    soc_s0t1_3_deriv = soc_s0t1_3_deriv_re + soc_s0t1_3_deriv_im * 1.0j
+
     soc_s0t1_deriv = np.array(
         [soc_s0t1_1_deriv, soc_s0t1_2_deriv, soc_s0t1_3_deriv]
     ).transpose(1, 2, 0)
@@ -419,7 +441,11 @@ def calc_soc_s1t1_deriv(
         )
     )
     soc_s1t1_2_deriv = soc_s1t1_2_deriv_re + 0.0j
-    soc_s1t1_3_deriv = -1.0 * soc_s1t1_1_deriv
+
+    soc_s1t1_3_deriv_re = -soc_s1t1_1_deriv_re
+    soc_s1t1_3_deriv_im = soc_s1t1_1_deriv_im
+    soc_s1t1_3_deriv = soc_s1t1_3_deriv_re + soc_s1t1_3_deriv_im * 1.0j
+
     soc_s1t1_deriv = np.array(
         [soc_s1t1_1_deriv, soc_s1t1_2_deriv, soc_s1t1_3_deriv]
     ).transpose(1, 2, 0)
