@@ -681,6 +681,21 @@ class decode_gaussian_parser(abstract_parser):
         for key, value in loaded_mat.items():
             setattr(self, "_" + key, value)
 
+    def read_basis(self):
+        return self._basis
+
+    def get_mo_coeff(self):
+        return self._mo_coeff
+
+    def get_xy_coeff(self):
+        return self._x_coeff, self._y_coeff
+
+    def get_mo_coeff_deriv(self):
+        return self._mo_coeff_deriv
+
+    def get_xy_coeff_deriv(self):
+        return self._x_coeff_deriv, self._y_coeff_deriv
+
 
 class RWF_parser:
     """

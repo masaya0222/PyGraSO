@@ -140,11 +140,7 @@ def calc_soc_s1t1(
 
 
 def calc_soc_s0t1_deriv(
-    atoms,
-    coordinates,
-    g_parser_t1,
-    normalize=True,
-    basis=None,
+    atoms, coordinates, g_parser_t1, normalize=True, basis=None, Z="one"
 ):
     mo_coeff = g_parser_t1.get_mo_coeff()
     mo_coeff_deriv = g_parser_t1.get_mo_coeff_deriv()
@@ -167,16 +163,17 @@ def calc_soc_s0t1_deriv(
         xpy_coeff_deriv_t1 = (
             xpy_coeff_deriv_t1
             - 2.0
-            * np.einsum(
-                "jb,ia,rdia->rdjb", xpy_coeff_t1, xpy_coeff_t1, xpy_coeff_deriv_t1
-            )
+            * np.trace(xpy_coeff_deriv_t1 @ xpy_coeff_t1.T, axis1=2, axis2=3)[
+                :, :, None, None
+            ]
+            * xpy_coeff_t1[None, None, :, :]
         ) / norm_t1
 
     ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser_t1.read_basis())
-    ao_soc = ao_calculator.get_ao_soc()
-    ao_soc_deriv = ao_calculator.get_ao_soc_deriv()
+    ao_soc = ao_calculator.get_ao_soc(Z=Z)
+    ao_soc_deriv = ao_calculator.get_ao_soc_deriv(Z=Z)
 
-    mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
+    mo_soc = mo_coeff @ ao_soc @ mo_coeff.T
 
     mo_soc *= 0.5 * fine_stru**2
     mo_soc_ij = mo_soc[
@@ -189,11 +186,14 @@ def calc_soc_s0t1_deriv(
         :, g_parser_t1.nfc + g_parser_t1.noa :, g_parser_t1.nfc + g_parser_t1.noa :
     ]
 
-    mo_soc_deriv = (
-        np.einsum("rdkpq,ip,jq->rdkij", ao_soc_deriv, mo_coeff, mo_coeff)
-        + np.einsum("kpq,rdip,jq->rdkij", ao_soc, mo_coeff_deriv, mo_coeff)
-        + np.einsum("kpq,ip,rdjq->rdkij", ao_soc, mo_coeff, mo_coeff_deriv)
-    )
+    mo_soc_deriv1 = mo_coeff @ ao_soc_deriv @ mo_coeff.T
+    mo_soc_deriv2 = np.tensordot(
+        mo_coeff_deriv, ao_soc @ mo_coeff.T, axes=(3, 1)
+    ).transpose(0, 1, 3, 2, 4)
+    mo_soc_deriv3 = np.tensordot(
+        mo_coeff_deriv, ao_soc.transpose(0, 2, 1) @ mo_coeff.T, axes=(3, 1)
+    ).transpose(0, 1, 3, 4, 2)
+    mo_soc_deriv = mo_soc_deriv1 + mo_soc_deriv2 + mo_soc_deriv3
 
     mo_soc_deriv *= 0.5 * fine_stru**2
     mo_soc_ij_deriv = mo_soc_deriv[
@@ -219,18 +219,18 @@ def calc_soc_s0t1_deriv(
     ]
 
     soc_s0t1_1_deriv_re = (1.0 / np.sqrt(2)) * (
-        -np.einsum("rdia,ia->rd", xpy_coeff_deriv_t1, mo_soc_ia[0, :, :])
-        - np.einsum("ia,rdia->rd", xpy_coeff_t1, mo_soc_ia_deriv[:, :, 0, :, :])
+        -np.trace(xpy_coeff_deriv_t1 @ mo_soc_ia[0, :, :].T, axis1=2, axis2=3)
+        - np.trace(mo_soc_ia_deriv[:, :, 0, :, :] @ xpy_coeff_t1.T, axis1=2, axis2=3)
     )
     soc_s0t1_1_deriv_im = (1.0 / np.sqrt(2)) * (
-        -np.einsum("rdia,ia->rd", xpy_coeff_deriv_t1, mo_soc_ia[1, :, :])
-        - np.einsum("ia,rdia->rd", xpy_coeff_t1, mo_soc_ia_deriv[:, :, 1, :, :])
+        -np.trace(xpy_coeff_deriv_t1 @ mo_soc_ia[1, :, :].T, axis1=2, axis2=3)
+        - np.trace(mo_soc_ia_deriv[:, :, 1, :, :] @ xpy_coeff_t1.T, axis1=2, axis2=3)
     )
     soc_s0t1_1_deriv = soc_s0t1_1_deriv_re + soc_s0t1_1_deriv_im * 1.0j
 
-    soc_s0t1_2_deriv_re = np.einsum(
-        "rdia,ia->rd", xpy_coeff_deriv_t1, mo_soc_ia[2, :, :]
-    ) + np.einsum("ia,rdia->rd", xpy_coeff_t1, mo_soc_ia_deriv[:, :, 2, :, :])
+    soc_s0t1_2_deriv_re = np.trace(
+        xpy_coeff_deriv_t1 @ mo_soc_ia[2, :, :].T, axis1=2, axis2=3
+    ) + np.trace(mo_soc_ia_deriv[:, :, 2, :, :] @ xpy_coeff_t1.T, axis1=2, axis2=3)
     soc_s0t1_2_deriv = soc_s0t1_2_deriv_re
     soc_s0t1_3_deriv_re = -soc_s0t1_1_deriv_re
     soc_s0t1_3_deriv_im = soc_s0t1_1_deriv_im
@@ -244,12 +244,7 @@ def calc_soc_s0t1_deriv(
 
 
 def calc_soc_s1t1_deriv(
-    atoms,
-    coordinates,
-    g_parser_s1,
-    g_parser_t1,
-    normalize=True,
-    basis=None,
+    atoms, coordinates, g_parser_s1, g_parser_t1, normalize=True, basis=None, Z="one"
 ):
     mo_coeff = g_parser_s1.get_mo_coeff()
     mo_coeff_deriv = g_parser_s1.get_mo_coeff_deriv()
@@ -271,9 +266,10 @@ def calc_soc_s1t1_deriv(
         xpy_coeff_deriv_s1 = (
             xpy_coeff_deriv_s1
             - 2.0
-            * np.einsum(
-                "jb,ia,rdia->rdjb", xpy_coeff_s1, xpy_coeff_s1, xpy_coeff_deriv_s1
-            )
+            * np.trace(xpy_coeff_deriv_s1 @ xpy_coeff_s1.T, axis1=2, axis2=3)[
+                :, :, None, None
+            ]
+            * xpy_coeff_s1[None, None, :, :]
         ) / norm_s1
 
     x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
@@ -289,16 +285,17 @@ def calc_soc_s1t1_deriv(
         xpy_coeff_deriv_t1 = (
             xpy_coeff_deriv_t1
             - 2.0
-            * np.einsum(
-                "jb,ia,rdia->rdjb", xpy_coeff_t1, xpy_coeff_t1, xpy_coeff_deriv_t1
-            )
+            * np.trace(xpy_coeff_deriv_t1 @ xpy_coeff_t1.T, axis1=2, axis2=3)[
+                :, :, None, None
+            ]
+            * xpy_coeff_t1[None, None, :, :]
         ) / norm_t1
 
     ao_calculator = calc_ao_element(atoms, coordinates, basis=g_parser_t1.read_basis())
-    ao_soc = ao_calculator.get_ao_soc()
-    ao_soc_deriv = ao_calculator.get_ao_soc_deriv()
+    ao_soc = ao_calculator.get_ao_soc(Z=Z)
+    ao_soc_deriv = ao_calculator.get_ao_soc_deriv(Z=Z)
 
-    mo_soc = np.einsum("kpq,ip,jq->kij", ao_soc, mo_coeff, mo_coeff)
+    mo_soc = mo_coeff @ ao_soc @ mo_coeff.T
 
     mo_soc *= 0.5 * fine_stru**2
     mo_soc_ij = mo_soc[
@@ -311,11 +308,14 @@ def calc_soc_s1t1_deriv(
         :, g_parser_s1.nfc + g_parser_s1.noa :, g_parser_s1.nfc + g_parser_s1.noa :
     ]
 
-    mo_soc_deriv = (
-        np.einsum("rdkpq,ip,jq->rdkij", ao_soc_deriv, mo_coeff, mo_coeff)
-        + np.einsum("kpq,rdip,jq->rdkij", ao_soc, mo_coeff_deriv, mo_coeff)
-        + np.einsum("kpq,ip,rdjq->rdkij", ao_soc, mo_coeff, mo_coeff_deriv)
-    )
+    mo_soc_deriv1 = mo_coeff @ ao_soc_deriv @ mo_coeff.T
+    mo_soc_deriv2 = np.tensordot(
+        mo_coeff_deriv, ao_soc @ mo_coeff.T, axes=(3, 1)
+    ).transpose(0, 1, 3, 2, 4)
+    mo_soc_deriv3 = np.tensordot(
+        mo_coeff_deriv, ao_soc.transpose(0, 2, 1) @ mo_coeff.T, axes=(3, 1)
+    ).transpose(0, 1, 3, 4, 2)
+    mo_soc_deriv = mo_soc_deriv1 + mo_soc_deriv2 + mo_soc_deriv3
 
     mo_soc_deriv *= 0.5 * fine_stru**2
     mo_soc_ij_deriv = mo_soc_deriv[
@@ -344,59 +344,72 @@ def calc_soc_s1t1_deriv(
         1.0
         / np.sqrt(2.0)
         * (
-            np.einsum(
-                "rdia,ja,ji->rd", xpy_coeff_deriv_s1, xpy_coeff_t1, mo_soc_ij[0, :, :]
+            np.trace(
+                xpy_coeff_deriv_s1 @ xpy_coeff_t1.T @ mo_soc_ij[0, :, :],
+                axis1=2,
+                axis2=3,
             )
-            + np.einsum(
-                "ia,rdja,ji->rd", xpy_coeff_s1, xpy_coeff_deriv_t1, mo_soc_ij[0, :, :]
+            + np.trace(
+                xpy_coeff_deriv_t1 @ xpy_coeff_s1.T @ mo_soc_ij[0, :, :].T,
+                axis1=2,
+                axis2=3,
             )
-            + np.einsum(
-                "ia,ja,rdji->rd",
-                xpy_coeff_s1,
-                xpy_coeff_t1,
-                mo_soc_ij_deriv[:, :, 0, :, :],
+            + np.trace(
+                mo_soc_ij_deriv[:, :, 0, :, :] @ xpy_coeff_s1 @ xpy_coeff_t1.T,
+                axis1=2,
+                axis2=3,
             )
-            - np.einsum(
-                "rdia,ib,ab->rd", xpy_coeff_deriv_s1, xpy_coeff_t1, mo_soc_ab[0, :, :]
+            - np.trace(
+                xpy_coeff_deriv_s1 @ mo_soc_ab[0, :, :] @ xpy_coeff_t1.T,
+                axis1=2,
+                axis2=3,
             )
-            - np.einsum(
-                "ia,rdib,ab->rd", xpy_coeff_s1, xpy_coeff_deriv_t1, mo_soc_ab[0, :, :]
+            - np.trace(
+                xpy_coeff_deriv_t1 @ mo_soc_ab[0, :, :].T @ xpy_coeff_s1.T,
+                axis1=2,
+                axis2=3,
             )
-            - np.einsum(
-                "ia,ib,rdab->rd",
-                xpy_coeff_s1,
-                xpy_coeff_t1,
-                mo_soc_ab_deriv[:, :, 0, :, :],
+            - np.trace(
+                mo_soc_ab_deriv[:, :, 0, :, :] @ xpy_coeff_t1.T @ xpy_coeff_s1,
+                axis1=2,
+                axis2=3,
             )
         )
     )
+
     soc_s1t1_1_deriv_im = (
         1.0
         / np.sqrt(2.0)
         * (
-            np.einsum(
-                "rdia,ja,ji->rd", xpy_coeff_deriv_s1, xpy_coeff_t1, mo_soc_ij[1, :, :]
+            np.trace(
+                xpy_coeff_deriv_s1 @ xpy_coeff_t1.T @ mo_soc_ij[1, :, :],
+                axis1=2,
+                axis2=3,
             )
-            + np.einsum(
-                "ia,rdja,ji->rd", xpy_coeff_s1, xpy_coeff_deriv_t1, mo_soc_ij[1, :, :]
+            + np.trace(
+                xpy_coeff_deriv_t1 @ xpy_coeff_s1.T @ mo_soc_ij[1, :, :].T,
+                axis1=2,
+                axis2=3,
             )
-            + np.einsum(
-                "ia,ja,rdji->rd",
-                xpy_coeff_s1,
-                xpy_coeff_t1,
-                mo_soc_ij_deriv[:, :, 1, :, :],
+            + np.trace(
+                mo_soc_ij_deriv[:, :, 1, :, :] @ xpy_coeff_s1 @ xpy_coeff_t1.T,
+                axis1=2,
+                axis2=3,
             )
-            - np.einsum(
-                "rdia,ib,ab->rd", xpy_coeff_deriv_s1, xpy_coeff_t1, mo_soc_ab[1, :, :]
+            - np.trace(
+                xpy_coeff_deriv_s1 @ mo_soc_ab[1, :, :] @ xpy_coeff_t1.T,
+                axis1=2,
+                axis2=3,
             )
-            - np.einsum(
-                "ia,rdib,ab->rd", xpy_coeff_s1, xpy_coeff_deriv_t1, mo_soc_ab[1, :, :]
+            - np.trace(
+                xpy_coeff_deriv_t1 @ mo_soc_ab[1, :, :].T @ xpy_coeff_s1.T,
+                axis1=2,
+                axis2=3,
             )
-            - np.einsum(
-                "ia,ib,rdab->rd",
-                xpy_coeff_s1,
-                xpy_coeff_t1,
-                mo_soc_ab_deriv[:, :, 1, :, :],
+            - np.trace(
+                mo_soc_ab_deriv[:, :, 1, :, :] @ xpy_coeff_t1.T @ xpy_coeff_s1,
+                axis1=2,
+                axis2=3,
             )
         )
     )
@@ -404,30 +417,35 @@ def calc_soc_s1t1_deriv(
 
     soc_s1t1_2_deriv_re = (
         -1.0
-        * np.einsum(
-            "rdia,ja,ji->rd", xpy_coeff_deriv_s1, xpy_coeff_t1, mo_soc_ij[2, :, :]
+        * np.trace(
+            xpy_coeff_deriv_s1 @ xpy_coeff_t1.T @ mo_soc_ij[2, :, :], axis1=2, axis2=3
         )
         - 1.0
-        * np.einsum(
-            "ia,rdja,ji->rd", xpy_coeff_s1, xpy_coeff_deriv_t1, mo_soc_ij[2, :, :]
+        * np.trace(
+            xpy_coeff_deriv_t1 @ xpy_coeff_s1.T @ mo_soc_ij[2, :, :].T, axis1=2, axis2=3
         )
         - 1.0
-        * np.einsum(
-            "ia,ja,rdji->rd", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ij_deriv[:, :, 2, :, :]
+        * np.trace(
+            mo_soc_ij_deriv[:, :, 2, :, :] @ xpy_coeff_s1 @ xpy_coeff_t1.T,
+            axis1=2,
+            axis2=3,
         )
         + 1.0
-        * np.einsum(
-            "rdia,ib,ab->rd", xpy_coeff_deriv_s1, xpy_coeff_t1, mo_soc_ab[2, :, :]
+        * np.trace(
+            xpy_coeff_deriv_s1 @ mo_soc_ab[2, :, :] @ xpy_coeff_t1.T, axis1=2, axis2=3
         )
         + 1.0
-        * np.einsum(
-            "ia,rdib,ab->rd", xpy_coeff_s1, xpy_coeff_deriv_t1, mo_soc_ab[2, :, :]
+        * np.trace(
+            xpy_coeff_deriv_t1 @ mo_soc_ab[2, :, :].T @ xpy_coeff_s1.T, axis1=2, axis2=3
         )
         + 1.0
-        * np.einsum(
-            "ia,ib,rdab->rd", xpy_coeff_s1, xpy_coeff_t1, mo_soc_ab_deriv[:, :, 2, :, :]
+        * np.trace(
+            mo_soc_ab_deriv[:, :, 2, :, :] @ xpy_coeff_t1.T @ xpy_coeff_s1,
+            axis1=2,
+            axis2=3,
         )
     )
+
     soc_s1t1_2_deriv = soc_s1t1_2_deriv_re + 0.0j
 
     soc_s1t1_3_deriv_re = -soc_s1t1_1_deriv_re
