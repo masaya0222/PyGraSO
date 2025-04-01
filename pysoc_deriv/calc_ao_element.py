@@ -16,7 +16,7 @@ from pyscf import gto, lib
 
 def sozeff(atom, zeff_type="one"):
     """
-    与えられた原子番号に対して、有効核電荷 (Z_eff) を計算する。
+    Calculate effective nuclear charge for given atomic number
     """
     assert zeff_type in ["one", "orca", "pysoc"], f"{zeff_type=} is not valid"
     neval = {
@@ -128,6 +128,15 @@ def sozeff(atom, zeff_type="one"):
             return (0.4 + 0.05 * neval[atom]) * atom
         elif 11 <= atom <= 18:
             return (0.925 - 0.0125 * neval[atom]) * atom
+        elif 32 <= atom <= 35: # Verified from orca output file
+            if atom == 32:
+                return 32.32
+            elif atom == 33:
+                return 31.68
+            elif atom == 34:
+                return 30.94
+            elif atom == 35:
+                return 30.10
         else:
             raise ValueError(f"SOZEFF is not available for atomic number {atom}")
 
@@ -336,7 +345,7 @@ class calc_ao_element:
             mat = np.zeros(
                 (self.natoms, 3, 3, self.nbasis, self.nbasis)
             )  # atom, xyz, q, i, j
-            am2nb = [1, 3, 6]
+            am2nb = [1, 3, 6, 10]
             for k in range(self.mol.natm):
                 self.mol.set_rinv_origin(self.mol.atom_coord(k))
                 idx_i = 0
