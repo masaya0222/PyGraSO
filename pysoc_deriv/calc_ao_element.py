@@ -128,7 +128,7 @@ def sozeff(atom, zeff_type="one"):
             return (0.4 + 0.05 * neval[atom]) * atom
         elif 11 <= atom <= 18:
             return (0.925 - 0.0125 * neval[atom]) * atom
-        elif 32 <= atom <= 35: # Verified from orca output file
+        elif 32 <= atom <= 35:  # Verified from orca output file
             if atom == 32:
                 return 32.32
             elif atom == 33:
