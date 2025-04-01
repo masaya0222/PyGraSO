@@ -41,7 +41,7 @@ title
 0 1
 """)
         for atom, coord in zip(atoms, coordinates):
-            f.write(f"{atom} {coord[0]:.6f} {coord[1]:.6f} {coord[2]:.6f}\n")
+            f.write(f"{atom} {coord[0]:+.10f} {coord[1]:+.10f} {coord[2]:+.10f}\n")
         f.write("\n")
 
 
@@ -78,6 +78,31 @@ def five_point_derivative(energies, step_size):
     return derivative
 
 
+def three_point_derivative(energies, step_size):
+    """
+    Calculate numerical derivative using three point differential method
+
+    Parameters:
+    - energies: list of float
+        list of energies at each point [E(-delta)), E(+delta)]
+    - step_size: float
+        step width delta
+
+    Returns:
+    - derivative: float
+        result of numerical derivatlve
+    """
+    if len(energies) != 2:
+        raise ValueError("fThe length of energies must be 2, but {len(energies)=}")
+
+    coefficients = [
+        -1 / (2 * step_size),
+        +1 / (2 * step_size),
+    ]
+    derivative = sum(c * e for c, e in zip(coefficients, energies))
+    return derivative
+
+
 class numerical_deriv:
     def __init__(
         self,
@@ -88,6 +113,7 @@ class numerical_deriv:
         calc_dir="num",
         calc_type="td",
         basis="6-31G",
+        method="five",
     ):
         self.mol_name = mol_name
         self.atoms = atoms
@@ -97,19 +123,31 @@ class numerical_deriv:
         self.step_size = step_size
         self.calc_dir = calc_dir
         self.calc_type = calc_type
+        self.method = method
+        if self.method == "three":
+            self.delta_list = [
+                -self.step_size,
+                +self.step_size,
+            ]
+        elif self.method == "five":
+            self.delta_list = [
+                -2 * self.step_size,
+                -self.step_size,
+                +self.step_size,
+                +2 * self.step_size,
+            ]
+        else:
+            raise ValueError(
+                f"Please set 'three' or 'five' to numerical_deriv.method, you gave {self.method}."
+            )
+
         os.makedirs(self.calc_dir, exist_ok=True)
 
     def execute_gaussian(self):
         axes = ["x", "y", "z"]
-        delta_list = [
-            -2 * self.step_size,
-            -self.step_size,
-            +self.step_size,
-            +2 * self.step_size,
-        ]
         for axis_idx, axis in enumerate(axes):
             for atom_idx in range(self.natoms):
-                for delta in delta_list:
+                for delta in self.delta_list:
                     pert_mol_name_s1 = os.path.join(
                         self.calc_dir,
                         f"{self.mol_name}_s1_{axis}_atom{atom_idx:03d}_delta{delta:+.4f}",
@@ -142,7 +180,7 @@ class numerical_deriv:
 
         for axis_idx, axis in enumerate(axes):
             for atom_idx in range(self.natoms):
-                for delta in delta_list:
+                for delta in self.delta_list:
                     pert_mol_name_t1 = os.path.join(
                         self.calc_dir,
                         f"{self.mol_name}_t1_{axis}_atom{atom_idx:03d}_delta{delta:+.4f}",
@@ -173,7 +211,7 @@ class numerical_deriv:
                     except subprocess.CalledProcessError as e:
                         raise ValueError(f"Error in Gaussian execution: {e}")
 
-    def execute_num_deriv(self, property_name, target_state="s1"):
+    def execute_num_deriv(self, property_name, target_state="s1", Z="one"):
         allow_property_names = [
             "mo_coeff",
             "xy_coeff",
@@ -187,17 +225,11 @@ class numerical_deriv:
 
         self.execute_gaussian()
         axes = ["x", "y", "z"]
-        delta_list = [
-            -2 * self.step_size,
-            -self.step_size,
-            +self.step_size,
-            +2 * self.step_size,
-        ]
         gradients = [[] for _ in range(self.natoms)]
         for axis_idx, axis in enumerate(axes):
             for atom_idx in range(self.natoms):
                 properties = []
-                for delta in delta_list:
+                for delta in self.delta_list:
                     pert_mol_name = os.path.join(
                         self.calc_dir,
                         f"{self.mol_name}_{target_state}_{axis}_atom{atom_idx:03d}_delta{delta:+.4f}",
@@ -235,7 +267,7 @@ class numerical_deriv:
                         g_parser_t1 = gaussian_perser(
                             pert_t1_log_file_name, pert_t1_rwf_file_name
                         )
-                        prop = calc_soc_s0t1(self.atoms, pert_coords, g_parser_t1)
+                        prop = calc_soc_s0t1(self.atoms, pert_coords, g_parser_t1, Z=Z)
                     if property_name == "soc_s1t1":
                         pert_mol_name_t1 = os.path.join(
                             self.calc_dir,
@@ -258,10 +290,13 @@ class numerical_deriv:
                             pert_s1_log_file_name, pert_s1_rwf_file_name
                         )
                         prop = calc_soc_s1t1(
-                            self.atoms, pert_coords, g_parser_s1, g_parser_t1
+                            self.atoms, pert_coords, g_parser_s1, g_parser_t1, Z=Z
                         )
                     properties.append(prop)
-                grad = five_point_derivative(properties, self.step_size)
+                if self.method == "three":
+                    grad = three_point_derivative(properties, self.step_size)
+                elif self.method == "five":
+                    grad = five_point_derivative(properties, self.step_size)
                 gradients[atom_idx].append(grad)
         gradients = np.array(gradients)
         a2b = 1.8897259886  # angstrom to bohr
