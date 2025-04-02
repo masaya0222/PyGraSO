@@ -1,5 +1,5 @@
 git submodule update --init --recursive
-cd thridparty/libcint/scripts/
+cd thirdparty/libcint/scripts/
 
 output_file="original.cl"
 

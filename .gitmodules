@@ -1,3 +1,3 @@
 [submodule "thridparty/libcint"]
-	path = thridparty/libcint
+	path = thirdparty/libcint
 	url = https://github.com/sunqm/libcint.git
