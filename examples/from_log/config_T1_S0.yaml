@@ -1,0 +1,8 @@
+triplet: "T1"
+singlet: "S0"
+dump: False
+xyz_file: "anthracene.xyz"
+zeff_type: "orca"
+
+triplet_log_file: "anthracene_t1_freq.log"
+triplet_rwf_file: "anthracene_t1_freq.rwf"

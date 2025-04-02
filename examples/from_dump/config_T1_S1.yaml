@@ -1,0 +1,10 @@
+triplet: "T1"
+singlet: "S1"
+dump: True
+xyz_file: "anthracene.xyz"
+zeff_type: "orca"
+
+triplet_json_file: "anthracene_t1_freq_log.json"
+triplet_npz_file:  "anthracene_t1_freq_mat.npz"
+singlet_json_file: "anthracene_s1_freq_log.json"
+singlet_npz_file:  "anthracene_s1_freq_mat.npz"
