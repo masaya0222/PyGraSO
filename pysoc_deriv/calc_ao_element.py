@@ -6,7 +6,7 @@ from pathlib import Path
 _cint = np.ctypeslib.load_library(
     "libcint",
     os.path.abspath(
-        os.path.join(Path(__file__).resolve().parent, "../thridparty/libcint/build")
+        os.path.join(Path(__file__).resolve().parent, "../thirdparty/libcint/build")
     ),
 )
 
