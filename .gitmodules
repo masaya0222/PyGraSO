@@ -1,3 +1,6 @@
 [submodule "thridparty/libcint"]
 	path = thirdparty/libcint
 	url = https://github.com/sunqm/libcint.git
+[submodule "thirdparty/clisp"]
+	path = thirdparty/clisp
+	url = https://github.com/rurban/clisp.git
