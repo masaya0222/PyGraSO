@@ -3,6 +3,9 @@
 ## Features
 
 ## Installation
+- Prerequisites
+  - Python version 3.11 or higher
+
 ```bash
 git clone git@github.com:masaya0222/pysoc_deriv.git
 cd pysoc_deriv
