@@ -1,0 +1,8 @@
+triplet: "T1"
+singlet: "S0"
+dump: True
+xyz_file: "2tThy.xyz"
+zeff_type: "orca"
+
+triplet_json_file: "2tThy_t1_freq_log.json"
+triplet_npz_file: "2tThy_t1_freq_mat.npz"
