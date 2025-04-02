@@ -1,5 +1,4 @@
 import os
-import sys
 import ctypes
 import numpy as np
 from pathlib import Path
@@ -11,7 +10,7 @@ _cint = np.ctypeslib.load_library(
     ),
 )
 
-from pyscf import gto, lib
+from pyscf import gto
 
 
 def sozeff(atom, zeff_type="one"):
