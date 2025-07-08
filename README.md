@@ -1,4 +1,9 @@
-# PySOC_deriv
+<div align="left">
+  <img src="https://github.com/masaya0222/PyGraSO/tree/main/logo.png" height="80px"/>
+</div>
+
+PyGraSO
+==================================
 
 ## Features
 
@@ -7,8 +12,8 @@
   - Python version 3.11 or higher
 
 ```bash
-git clone git@github.com:masaya0222/pysoc_deriv.git
-cd pysoc_deriv
+git clone git@github.com:masaya0222/PyGraSO.git
+cd PyGraSO
 
 echo "export PYTHONPATH=$(pwd):\$PYTHONPATH" >> ~/.bashrc
 echo "export PATH=$(pwd)/bin:\$PATH" >> ~/.bashrc
