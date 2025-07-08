@@ -1,9 +1,9 @@
 import os
 import numpy as np
 
-from pysoc_deriv.parser import gaussian_perser
-from pysoc_deriv.num_deriv import numerical_deriv
-from pysoc_deriv.calc_ao_element import calc_ao_element
+from pygraso.parser import gaussian_perser
+from pygraso.num_deriv import numerical_deriv
+from pygraso.calc_ao_element import calc_ao_element
 
 
 def test_h2_tda_tdip():

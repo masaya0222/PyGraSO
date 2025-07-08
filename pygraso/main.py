@@ -5,9 +5,9 @@ import yaml
 import logging
 import argparse
 
-from pysoc_deriv.parser import decode_gaussian_parser
-from pysoc_deriv.preprocessing import extract_info
-from pysoc_deriv.calc_soc import (
+from pygraso.parser import decode_gaussian_parser
+from pygraso.preprocessing import extract_info
+from pygraso.calc_soc import (
     calc_soc_s0t1,
     calc_soc_s0t1_deriv,
     calc_soc_s1t1,

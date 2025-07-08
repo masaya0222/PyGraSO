@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from pysoc_deriv.preprocessing import tg16
+from pygraso.preprocessing import tg16
 import argparse
 
 argparser = argparse.ArgumentParser(

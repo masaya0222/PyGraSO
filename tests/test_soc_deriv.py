@@ -1,10 +1,10 @@
 import os
 import numpy as np
 
-from pysoc_deriv.parser import gaussian_perser
-from pysoc_deriv.num_deriv import numerical_deriv
-from pysoc_deriv.calc_ao_element import calc_ao_element
-from pysoc_deriv.calc_soc import calc_soc_s0t1_deriv, calc_soc_s1t1_deriv
+from pygraso.parser import gaussian_perser
+from pygraso.num_deriv import numerical_deriv
+from pygraso.calc_ao_element import calc_ao_element
+from pygraso.calc_soc import calc_soc_s0t1_deriv, calc_soc_s1t1_deriv
 
 
 def test_h2o_ao_soc_deriv():
