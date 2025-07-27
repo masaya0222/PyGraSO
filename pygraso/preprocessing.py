@@ -9,8 +9,8 @@ import argparse
 from .parser import gaussian_perser, decode_gaussian_parser
 
 
-def extract_info(mol_name, log_file_path, rwf_file_path, deriv=True):
-    parser = gaussian_perser(log_file_path, rwf_file_path)
+def extract_info(mol_name, log_file_path, rwf_file_path, method="1", deriv=True):
+    parser = gaussian_perser(log_file_path, rwf_file_path, method)
     parser.read_basis()
 
     dump_json_file = f"{mol_name}_log.json"
@@ -60,7 +60,7 @@ def check_file_exist(file_path):
         raise FileNotFoundError(f"Can't find {file_path}")
 
 
-def tg16(inp_file, work_dir=None, deriv=True):
+def tg16(inp_file, work_dir=None, method="1", deriv=True):
     if work_dir is None:
         work_dir = os.environ.get("GAUSS_SCRDIR")
     check_file_exist(inp_file)
@@ -81,6 +81,6 @@ def tg16(inp_file, work_dir=None, deriv=True):
         rwf_file_path = os.path.join(temp_dir, f"{mol_name}.rwf")
         check_file_exist(rwf_file_path)
         st = time.time()
-        extract_info(mol_name, log_file_path, rwf_file_path, deriv)
+        extract_info(mol_name, log_file_path, rwf_file_path, method, deriv)
         et = time.time()
         print(f"extract info time: {et - st}")

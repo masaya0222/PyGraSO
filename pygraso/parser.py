@@ -146,13 +146,19 @@ class abstract_parser:
 
 
 class gaussian_perser(abstract_parser):
-    def __init__(self, log_file_name, rwf_file_name):
+    def __init__(self, log_file_name, rwf_file_name, method="1"):
         super().__init__()
 
         assert os.path.isfile(log_file_name), f"{log_file_name=} doesn't exist"
         self.log_file_name = log_file_name
         assert os.path.isfile(rwf_file_name), f"{rwf_file_name=} doesn't exist"
         self.rwf_file_name = rwf_file_name
+
+        method = str(method)
+        assert method == "1" or method == "2", (
+            f"{method} is not valid for calculation type for orbital perturbation response matrix U, please select 1 or 2"
+        )
+        self.method = method
 
         (
             self.natoms,
@@ -361,51 +367,68 @@ class gaussian_perser(abstract_parser):
     def get_mo_coeff_U(self):
         if self._mo_coeff_U is not None:
             return self._mo_coeff_U
-        try:
-            num_unique = self.nbasis * (self.nbasis + 1) // 2
-            mo_f1 = self.rwf_parser.parse(
-                self.rwf_parser.F1_CPHF, (3 + self.natoms * 3) * num_unique
-            )[3 * num_unique :]
-            mo_f1 = np.array([float(c.replace("D", "E")) for c in mo_f1])
-            mo_f1 = np.array(
-                [
-                    flatten_to_symmetric(
-                        mo_f1[i * num_unique : (i + 1) * num_unique], self.nbasis
-                    )
-                    for i in range(3 * self.natoms)
+        if self.method == "1":
+            try:
+                mo_coeff_U = self.rwf_parser.parse(self.rwf_parser.U_CPHF)
+                mo_coeff_U = mo_coeff_U[
+                    3 * self.nbasis * self.nbasis : (3 + 3 * self.natoms)
+                    * self.nbasis
+                    * self.nbasis
                 ]
-            )
-            mo_f1 = mo_f1.reshape(self.natoms, 3, self.nbasis, self.nbasis)
+                mo_coeff_U = np.array(
+                    [float(c.replace("D", "E")) for c in mo_coeff_U]
+                ).reshape(self.natoms, 3, self.nbasis, self.nbasis)
+                self._mo_coeff_U = mo_coeff_U
+            except Exception as e:
+                raise ValueError(f"Error occur while reading mo_coeff_U:{e}")
 
-            mo_energy = self.rwf_parser.parse(self.rwf_parser.MO_ENERGY, self.nbasis)
-            mo_energy = np.array([float(c.replace("D", "E")) for c in mo_energy])
-            delta = 1e-18
-            ao_ovlp_deriv = self.get_ao_ovlp_deriv()
-            mo_coeff = self.get_mo_coeff()
-            mo_ovlp_deriv = (mo_coeff) @ ao_ovlp_deriv @ (mo_coeff.T)
-            tmp1 = mo_f1 - mo_ovlp_deriv * mo_energy[None, None, None, :]
-            tmp2 = mo_energy[None, :] - mo_energy[:, None] + delta
-            mo_coeff_U = tmp1 / tmp2[None, None, :, :]
+        elif self.method == "2":
+            try:
+                num_unique = self.nbasis * (self.nbasis + 1) // 2
+                mo_f1 = self.rwf_parser.parse(
+                    self.rwf_parser.F1_CPHF, (3 + self.natoms * 3) * num_unique
+                )[3 * num_unique :]
+                mo_f1 = np.array([float(c.replace("D", "E")) for c in mo_f1])
+                mo_f1 = np.array(
+                    [
+                        flatten_to_symmetric(
+                            mo_f1[i * num_unique : (i + 1) * num_unique], self.nbasis
+                        )
+                        for i in range(3 * self.natoms)
+                    ]
+                )
+                mo_f1 = mo_f1.reshape(self.natoms, 3, self.nbasis, self.nbasis)
 
-            for i in range(self.natoms):
-                for j in range(3):
-                    for k in range(self.nbasis):
-                        mo_coeff_U[i, j, k, k] = -0.5 * mo_ovlp_deriv[i, j, k, k]
+                mo_energy = self.rwf_parser.parse(
+                    self.rwf_parser.MO_ENERGY, self.nbasis
+                )
+                mo_energy = np.array([float(c.replace("D", "E")) for c in mo_energy])
+                delta = 1e-18
+                ao_ovlp_deriv = self.get_ao_ovlp_deriv()
+                mo_coeff = self.get_mo_coeff()
+                mo_ovlp_deriv = (mo_coeff) @ ao_ovlp_deriv @ (mo_coeff.T)
+                tmp1 = mo_f1 - mo_ovlp_deriv * mo_energy[None, None, None, :]
+                tmp2 = mo_energy[None, :] - mo_energy[:, None] + delta
+                mo_coeff_U = tmp1 / tmp2[None, None, :, :]
 
-            self._mo_coeff_U = mo_coeff_U
-        except Exception as e:
-            raise ValueError(f"Error occur while reading mo_coeff_U:{e}")
+                for i in range(self.natoms):
+                    for j in range(3):
+                        for k in range(self.nbasis):
+                            mo_coeff_U[i, j, k, k] = -0.5 * mo_ovlp_deriv[i, j, k, k]
+
+                self._mo_coeff_U = mo_coeff_U.transpose(0, 1, 3, 2)
+            except Exception as e:
+                raise ValueError(f"Error occur while reading mo_coeff_U:{e}")
         return self._mo_coeff_U
 
     def get_mo_coeff_deriv(self):
         if self._mo_coeff_deriv is not None:
             return self._mo_coeff_deriv
+
         try:
             mo_coeff = self.get_mo_coeff()
             mo_coeff_U = self.get_mo_coeff_U()
-            mo_coeff_U = mo_coeff_U.transpose(0, 1, 3, 2)
             mo_coeff_deriv = mo_coeff_U @ mo_coeff
-
             self._mo_coeff_deriv = mo_coeff_deriv
         except Exception as e:
             raise ValueError(f"Error occur while reading mo_coeff_deriv:{e}")
@@ -444,12 +467,7 @@ class gaussian_perser(abstract_parser):
         elif self.nxy == 2:
             return self._x_coeff, self._y_coeff
 
-    def get_tdens_deriv(self):
-        if self._x_tdens_deriv is not None:
-            if self.nxy == 1:
-                return self._x_tdens_deriv
-            if (self.nxy == 2) and (self._y_tdens_deriv is not None):
-                return self._x_tdens_deriv, self._y_tdens_deriv
+    def get_xy_coeff_deriv_tmp(self):
         try:
             if self.nxy == 1:
                 pattern = r" \[X\]\(x\) alpha: IBuc=(\d+) IX=\s+1 I=\s+1 J=\s+1:"
@@ -479,10 +497,28 @@ class gaussian_perser(abstract_parser):
                     ).T
                 )
             x_coeff_deriv_tmp = np.array(x_coeff_deriv_tmp)
+        except Exception as e:
+            raise ValueError(f"Error occur while reading xy_coeff_deriv_tmp:{e}")
+        if self.nxy == 1:
+            return x_coeff_deriv_tmp
+        elif self.nxy == 2:
+            return (
+                x_coeff_deriv_tmp[:, : self.noa, :],
+                x_coeff_deriv_tmp[:, self.noa :, :],
+            )
 
+    def get_tdens_deriv(self):
+        if self._x_tdens_deriv is not None:
+            if self.nxy == 1:
+                return self._x_tdens_deriv
+            if (self.nxy == 2) and (self._y_tdens_deriv is not None):
+                return self._x_tdens_deriv, self._y_tdens_deriv
+
+        try:
+            if self.nxy == 1:
+                x_coeff_deriv_tmp = self.get_xy_coeff_deriv_tmp()
             if self.nxy == 2:
-                y_coeff_deriv_tmp = x_coeff_deriv_tmp[:, self.noa :, :]
-                x_coeff_deriv_tmp = x_coeff_deriv_tmp[:, : self.noa, :]
+                x_coeff_deriv_tmp, y_coeff_deriv_tmp = self.get_xy_coeff_deriv_tmp()
 
             mo_coeff_U = self.rwf_parser.parse(self.rwf_parser.U_CPHF)
             mo_coeff_U = mo_coeff_U[
@@ -498,6 +534,9 @@ class gaussian_perser(abstract_parser):
             mo_coeff_deriv_tmp = (mo_coeff_U @ mo_coeff).reshape(
                 self.natoms * 3, self.nbasis, self.nbasis
             )
+            self._mo_coeff_deriv_tmp = -mo_coeff_deriv_tmp.reshape(
+                self.natoms, 3, self.nbasis, self.nbasis
+            )  # debug
 
             mo_coeff_deriv_tmp_i = mo_coeff_deriv_tmp[:, : self.nfc + self.noa, :]
             mo_coeff_deriv_tmp_a = mo_coeff_deriv_tmp[:, self.nfc + self.noa :, :]
@@ -557,65 +596,95 @@ class gaussian_perser(abstract_parser):
                 return self._x_coeff_deriv
             elif self.nxy == 2 and (self._y_coeff_deriv is not None):
                 return self._x_coeff_deriv, self._y_coeff_deriv
-        try:
-            x_tdens_deriv = self.get_tdens_deriv()
-            if self.nxy == 2:
-                y_tdens_deriv = x_tdens_deriv[1]
-                x_tdens_deriv = x_tdens_deriv[0]
-            x_tdens_deriv = 0.5 * x_tdens_deriv
-            mo_coeff = self.get_mo_coeff()
-            mo_coeff_deriv = self.get_mo_coeff_deriv()
-
-            x_coeff = self.get_xy_coeff()
-            if self.nxy == 2:
-                y_coeff = x_coeff[1]  # Y, dexcitation amplitude
-                x_coeff = x_coeff[0]  # X, excitation amplitude
-
-            ao_ovlp = self.get_ao_ovlp()
-
-            x_tdens_deriv2 = (
-                mo_coeff[: self.nfc + self.noa, :].T
-                @ x_coeff
-                @ mo_coeff_deriv[:, :, self.nfc + self.noa :, :]
-            )
-            x_tdens_deriv3 = (
-                mo_coeff[self.nfc + self.noa :, :].T
-                @ x_coeff.T
-                @ mo_coeff_deriv[:, :, : self.nfc + self.noa, :]
-            ).transpose(0, 1, 3, 2)
-            x_tdens_deriv -= x_tdens_deriv2 + x_tdens_deriv3
-
-            x_coeff_deriv = (
-                (mo_coeff[: self.nfc + self.noa, :] @ ao_ovlp)
-                @ x_tdens_deriv
-                @ (mo_coeff[self.nfc + self.noa :, :] @ ao_ovlp).T
-            )
-            self._x_coeff_deriv = x_coeff_deriv
-
-            if self.nxy == 2:
-                y_tdens_deriv = 0.5 * y_tdens_deriv
-                y_tdens_deriv2 = (
-                    mo_coeff[self.nfc + self.noa :, :].T
-                    @ y_coeff.T
-                    @ mo_coeff_deriv[:, :, : self.nfc + self.noa, :]
+        if self.method == "1":
+            try:
+                if self.nxy == 1:
+                    x_coeff_deriv_tmp = self.get_xy_coeff_deriv_tmp()
+                if self.nxy == 2:
+                    x_coeff_deriv_tmp, y_coeff_deriv_tmp = self.get_xy_coeff_deriv_tmp()
+                x_zero = np.zeros((self.natoms, 3, self.nfc, self.nva))
+                x_coeff_deriv = -np.concatenate(
+                    (
+                        x_zero,
+                        x_coeff_deriv_tmp.reshape(self.natoms, 3, self.noa, self.nva),
+                    ),
+                    axis=2,
                 )
-                y_tdens_deriv3 = (
+                self._x_coeff_deriv = x_coeff_deriv
+                if self.nxy == 2:
+                    y_zero = np.zeros((self.natoms, 3, self.nfc, self.nva))
+                    y_coeff_deriv = -np.concatenate(
+                        (
+                            y_zero,
+                            y_coeff_deriv_tmp.reshape(
+                                self.natoms, 3, self.noa, self.nva
+                            ),
+                        ),
+                        axis=2,
+                    )
+                    self._y_coeff_deriv = y_coeff_deriv
+            except Exception as e:
+                raise ValueError(f"Error occur while reading xy_coeff_deriv:{e}")
+        elif self.method == "2":
+            try:
+                x_tdens_deriv = self.get_tdens_deriv()
+                if self.nxy == 2:
+                    y_tdens_deriv = x_tdens_deriv[1]
+                    x_tdens_deriv = x_tdens_deriv[0]
+                x_tdens_deriv = 0.5 * x_tdens_deriv
+                mo_coeff = self.get_mo_coeff()
+                mo_coeff_deriv = self.get_mo_coeff_deriv()
+
+                x_coeff = self.get_xy_coeff()
+                if self.nxy == 2:
+                    y_coeff = x_coeff[1]  # Y, dexcitation amplitude
+                    x_coeff = x_coeff[0]  # X, excitation amplitude
+
+                ao_ovlp = self.get_ao_ovlp()
+
+                x_tdens_deriv2 = (
                     mo_coeff[: self.nfc + self.noa, :].T
-                    @ y_coeff
+                    @ x_coeff
                     @ mo_coeff_deriv[:, :, self.nfc + self.noa :, :]
+                )
+                x_tdens_deriv3 = (
+                    mo_coeff[self.nfc + self.noa :, :].T
+                    @ x_coeff.T
+                    @ mo_coeff_deriv[:, :, : self.nfc + self.noa, :]
                 ).transpose(0, 1, 3, 2)
-                y_tdens_deriv -= y_tdens_deriv2 + y_tdens_deriv3
+                x_tdens_deriv -= x_tdens_deriv2 + x_tdens_deriv3
 
-                y_coeff_deriv = (
-                    mo_coeff[self.nfc + self.noa :, :]
-                    @ ao_ovlp
-                    @ y_tdens_deriv
-                    @ (mo_coeff[: self.nfc + self.noa, :] @ ao_ovlp).T
-                ).transpose(0, 1, 3, 2)
-                self._y_coeff_deriv = y_coeff_deriv
+                x_coeff_deriv = (
+                    (mo_coeff[: self.nfc + self.noa, :] @ ao_ovlp)
+                    @ x_tdens_deriv
+                    @ (mo_coeff[self.nfc + self.noa :, :] @ ao_ovlp).T
+                )
+                self._x_coeff_deriv = x_coeff_deriv
 
-        except Exception as e:
-            raise ValueError(f"Error occur while reading xy_coeff_deriv:{e}")
+                if self.nxy == 2:
+                    y_tdens_deriv = 0.5 * y_tdens_deriv
+                    y_tdens_deriv2 = (
+                        mo_coeff[self.nfc + self.noa :, :].T
+                        @ y_coeff.T
+                        @ mo_coeff_deriv[:, :, : self.nfc + self.noa, :]
+                    )
+                    y_tdens_deriv3 = (
+                        mo_coeff[: self.nfc + self.noa, :].T
+                        @ y_coeff
+                        @ mo_coeff_deriv[:, :, self.nfc + self.noa :, :]
+                    ).transpose(0, 1, 3, 2)
+                    y_tdens_deriv -= y_tdens_deriv2 + y_tdens_deriv3
+
+                    y_coeff_deriv = (
+                        mo_coeff[self.nfc + self.noa :, :]
+                        @ ao_ovlp
+                        @ y_tdens_deriv
+                        @ (mo_coeff[: self.nfc + self.noa, :] @ ao_ovlp).T
+                    ).transpose(0, 1, 3, 2)
+                    self._y_coeff_deriv = y_coeff_deriv
+
+            except Exception as e:
+                raise ValueError(f"Error occur while reading xy_coeff_deriv:{e}")
         if self.nxy == 1:
             return self._x_coeff_deriv
         elif self.nxy == 2:

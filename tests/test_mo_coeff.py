@@ -31,7 +31,7 @@ def test_h2_mo_coeff_deriv_anal():
     log_file_name = os.path.join(current_dir, f"data/{mol_name}.log")
     rwf_file_name = os.path.join(current_dir, f"data/{mol_name}.rwf")
 
-    g_parser = gaussian_perser(log_file_name, rwf_file_name)
+    g_parser = gaussian_perser(log_file_name, rwf_file_name, method="2")
     mo_coeff_deriv = g_parser.get_mo_coeff_deriv()
     # np.save(current_dir+'/data/h2_mo_coeff_deriv.npy', mo_coeff_deriv)
     answer = np.load(current_dir + "/data/h2_mo_coeff_deriv.npy")
@@ -87,7 +87,7 @@ def test_h2o_mo_coeff_deriv_anal():
     log_file_name = os.path.join(current_dir, f"data/{mol_name}.log")
     rwf_file_name = os.path.join(current_dir, f"data/{mol_name}.rwf")
 
-    g_parser = gaussian_perser(log_file_name, rwf_file_name)
+    g_parser = gaussian_perser(log_file_name, rwf_file_name, method="2")
     mo_coeff_deriv = g_parser.get_mo_coeff_deriv()
     # np.save(current_dir+'/data/h2o_mo_coeff_deriv.npy', mo_coeff_deriv)
     answer = np.load(current_dir + "/data/h2o_mo_coeff_deriv.npy")

@@ -15,6 +15,15 @@ argparser.add_argument(
     default=True,
     help="store derivative properties (default: True)",
 )
+
+argparser.add_argument(
+    "--method",
+    "-m",
+    type=str,
+    default="1",
+    help="calculation method for orbital perturbation response matrix U. Please select 1 or 2 (default: '1')",
+)
+
 argparser.add_argument(
     "--work_dir",
     "-w",
@@ -24,4 +33,4 @@ argparser.add_argument(
 )
 args = argparser.parse_args()
 
-tg16(args.input_file, work_dir=args.work_dir, deriv=args.deriv)
+tg16(args.input_file, work_dir=args.work_dir, method=args.method, deriv=args.deriv)

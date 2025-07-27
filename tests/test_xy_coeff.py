@@ -33,7 +33,7 @@ def test_h2_tda_x_coeff_deriv_anal():
     log_file_name = os.path.join(current_dir, f"data/{mol_name}.log")
     rwf_file_name = os.path.join(current_dir, f"data/{mol_name}.rwf")
 
-    g_parser = gaussian_perser(log_file_name, rwf_file_name)
+    g_parser = gaussian_perser(log_file_name, rwf_file_name, method="2")
     x_coeff_deriv = g_parser.get_xy_coeff_deriv()
     assert isinstance(x_coeff_deriv, np.ndarray)
 
@@ -88,7 +88,7 @@ def test_h2_td_xy_coeff_deriv_anal():
     log_file_name = os.path.join(current_dir, f"data/{mol_name}.log")
     rwf_file_name = os.path.join(current_dir, f"data/{mol_name}.rwf")
 
-    g_parser = gaussian_perser(log_file_name, rwf_file_name)
+    g_parser = gaussian_perser(log_file_name, rwf_file_name, method="2")
     xy_coeff_deriv = g_parser.get_xy_coeff_deriv()
     assert isinstance(xy_coeff_deriv, tuple)
 
@@ -153,7 +153,7 @@ def test_h2o_tda_x_coeff_deriv_anal():
     log_file_name = os.path.join(current_dir, f"data/{mol_name}.log")
     rwf_file_name = os.path.join(current_dir, f"data/{mol_name}.rwf")
 
-    g_parser = gaussian_perser(log_file_name, rwf_file_name)
+    g_parser = gaussian_perser(log_file_name, rwf_file_name, method="2")
     x_coeff_deriv = g_parser.get_xy_coeff_deriv()
     assert isinstance(x_coeff_deriv, np.ndarray)
 
@@ -221,7 +221,7 @@ def test_h2o_td_xy_coeff_deriv_anal():
     log_file_name = os.path.join(current_dir, f"data/{mol_name}.log")
     rwf_file_name = os.path.join(current_dir, f"data/{mol_name}.rwf")
 
-    g_parser = gaussian_perser(log_file_name, rwf_file_name)
+    g_parser = gaussian_perser(log_file_name, rwf_file_name, method="2")
     xy_coeff_deriv = g_parser.get_xy_coeff_deriv()
     assert isinstance(xy_coeff_deriv, tuple)
 

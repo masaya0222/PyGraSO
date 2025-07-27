@@ -111,6 +111,7 @@ def main():
 
     default_config = {
         "zeff_type": "orca",
+        "method": 1,
         "deriv": True,
         "dump": False,
         "triplet": "",
@@ -134,6 +135,7 @@ def main():
             triplet_mol_name,
             config["triplet_log_file"],
             config["triplet_rwf_file"],
+            method=config["method"],
             deriv=config["deriv"],
         )
         logging.info("Extracted triplet state infomation")
@@ -145,6 +147,7 @@ def main():
                 singlet_mol_name,
                 config["singlet_log_file"],
                 config["singlet_rwf_file"],
+                method=config["method"],
                 deriv=config["deriv"],
             )
             logging.info("Extracted singlet state information")
