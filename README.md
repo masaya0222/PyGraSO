@@ -1,5 +1,5 @@
 <div align="left">
-  <img src="https://github.com/masaya0222/PyGraSO/blob/main/logo.png" height="80px"/>
+  <img src="https://github.com/masaya0222/PyGraSO/blob/main/logo.png" height="160px"/>
 </div>
 
 PyGraSO
