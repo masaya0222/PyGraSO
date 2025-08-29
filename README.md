@@ -10,6 +10,10 @@ PyGraSO
 ## Installation
 - Prerequisites
   - Python version 3.11 or higher
+  - GNU Make 3.82+ (tested on 3.82)
+  - CMake 3.22+ (tested on 3.22.1)
+  - Gaussian 16 (g16) installed and available on `PATH` (i.e., `g16` is executable)
+  - `rwfdump` available on `PATH` (i.e., `rwfdump` is executable)
 
 ```bash
 git clone git@github.com:masaya0222/PyGraSO.git
