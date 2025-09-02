@@ -6,6 +6,11 @@ PyGraSO
 ==================================
 
 ## Features
+- **Analytic nuclear-coordinate derivatives of SOC**
+  Computes ∂/∂R ⟨i| H_SO | T_j⟩ from **Gaussian 16** frequency calculations (e.g., S1 - T1).
+
+- **State-pair selection via config file**
+  Target singlet/triplet pairs are declared in a YAML file
 
 ## Installation
 - Prerequisites
@@ -47,6 +52,9 @@ bash run_from_dump.sh
     `%rwf="NameOfFile".rwf`  (e.g., `molecule_s1_freq.rwf`)
   - Route options (example):  
     `freq 6D 10F IOP(10/33=2,10/95=9)`
+  - Select the n-th excited state in route options:
+    - For **singlet** excited state: `td(root=n)`
+    - For **triplet"" excited state: `td(triplet, root=n)`
 - **Log size caution:** `IOP(10/33=2)` can make `.log` files very large. PyGraSO supports two workflows:
   1) keep `.log` files and parse them, or
   2) avoid large logs by dumping the required derivative info to files and then run PyGraSO.
@@ -55,7 +63,7 @@ bash run_from_dump.sh
 > ```
 > %chk=molecule_s1_freq.chk
 > %rwf=molecule_s1_freq.rwf
-> #p <functional/basis> td freq 6D 10F IOP(10/33=2,10/95=9)
+> #p <functional/basis> td(root=1) freq 6D 10F IOP(10/33=2,10/95=9)
 > ```
 
 ---
@@ -101,3 +109,21 @@ triplet_npz_file: "molecule_t1_freq_mat.npz"
 singlet_json_file: "molecule_s1_freq_log.json"
 singlet_npz_file: "molecule_s1_freq_mat.npz"
 ```
+
+## Citation
+
+If you use **PyGraSO** in your research, please cite:
+
+- Masaya Hagai, Kazuhiro J. Fujimoto, Takeshi Yanai. *PyGraSO: Analytical Nuclear Derivatives of Spin–Orbit Coupling for Intersystem Crossing Dynamics Simulations*. ChemRxiv, 2025. https://doi.org/10.26434/chemrxiv-2025-0ssh5
+
+### BibTeX
+```bibtex
+@article{Hagai2025PyGraSO,
+  title   = {PyGraSO: Analytical Nuclear Derivatives of Spin-Orbit Coupling for Intersystem Crossing Dynamics Simulations},
+  author  = {Hagai, Masaya and Fujimoto, Kazuhiro J. and Yanai, Takeshi},
+  journal = {ChemRxiv},
+  year    = {2025},
+  doi     = {10.26434/chemrxiv-2025-0ssh5},
+  url     = {https://doi.org/10.26434/chemrxiv-2025-0ssh5},
+  note    = {Version 1, preprint}
+}
