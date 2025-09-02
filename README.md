@@ -16,7 +16,7 @@ PyGraSO
   - `rwfdump` available on `PATH` (i.e., `rwfdump` is executable)
 
 ```bash
-git clone git@github.com:masaya0222/PyGraSO.git
+git clone --recurse-submodules git@github.com:masaya0222/PyGraSO.git
 cd PyGraSO
 
 echo "export PYTHONPATH=$(pwd):\$PYTHONPATH" >> ~/.bashrc
@@ -40,3 +40,64 @@ bash run_from_dump.sh
 ```
 
 ## Usage
+### Notes (read before running)
+- Prepare an **XYZ file** that contains atomic symbols and **Cartesian coordinates** (e.g., `molecule.xyz`).
+- In each **Gaussian input (.gjf)**, add:
+  - The RWF directive:  
+    `%rwf="NameOfFile".rwf`  (e.g., `molecule_s1_freq.rwf`)
+  - Route options (example):  
+    `freq 6D 10F IOP(10/33=2,10/95=9)`
+- **Log size caution:** `IOP(10/33=2)` can make `.log` files very large. PyGraSO supports two workflows:
+  1) keep `.log` files and parse them, or
+  2) avoid large logs by dumping the required derivative info to files and then run PyGraSO.
+
+> Minimal `.gjf` route example
+> ```
+> %chk=molecule_s1_freq.chk
+> %rwf=molecule_s1_freq.rwf
+> #p <functional/basis> td freq 6D 10F IOP(10/33=2,10/95=9)
+> ```
+
+---
+
+### 1) Keep log files (example: T1–S1)
+```bash
+g16 molecule_s1_freq.gjf
+g16 molecule_t1_freq.gjf
+pyGraso -c config_T1_S1.yaml
+```
+`config_T1_S1.yaml` example:
+```
+triplet: "T1"
+singlet: "S1"
+dump: False
+xyz_file: "molecule.xyz"
+zeff_type: "orca"
+
+triplet_log_file: "molecule_t1_freq.log"
+triplet_rwf_file: "molecule_t1_freq.rwf"
+singlet_log_file: "molecule_s1_freq.log"
+singlet_rwf_file: "molecule_s1_freq.rwf"
+```
+
+
+### 2) Avoid large logs (dump derivative info instead)
+Use `tg16` to run Gaussian and dump the required coefficient-derivative information without keeping bulky logs, then run PyGraSO:
+```
+tg16 molecule_s1_freq.gjf
+tg16 molecule_t1_freq.gjf
+pyGraso -c config_T1_S1.yaml
+```
+`config_T1_S1.yaml` example:
+```
+triplet: "T1"
+singlet: "S1"
+dump: True
+xyz_file: "molecule.xyz"
+zeff_type: "orca"
+
+triplet_json_file: "molecule_t1_freq_log.json"
+triplet_npz_file: "molecule_t1_freq_mat.npz"
+singlet_json_file: "molecule_s1_freq_log.json"
+singlet_npz_file: "molecule_s1_freq_mat.npz"
+```
