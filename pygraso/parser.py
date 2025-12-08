@@ -435,6 +435,15 @@ class gaussian_perser(abstract_parser):
         return self._mo_coeff_deriv
 
     def get_xy_coeff(self):
+        def normalize_number_string(s: str) -> str:
+            # Replace Fortran 'D' with 'E'
+            s = s.replace("D", "E")
+            # If there's a minus sign without an 'E', insert 'E'
+            if "-" in s and "E" not in s:
+                parts = s.split("-")
+                if len(parts) == 2 and parts[1].isdigit():
+                    s = parts[0] + "E-" + parts[1]
+            return s
         if self._x_coeff is not None:
             if self.nxy == 1:
                 return self._x_coeff
@@ -442,7 +451,7 @@ class gaussian_perser(abstract_parser):
                 return self._x_coeff, self._y_coeff
         try:
             xy_coeff = self.rwf_parser.parse(self.rwf_parser.XY_COEFFS)
-            xy_coeff = [float(v.replace("D", "E")) for v in "  ".join(xy_coeff).split()]
+            xy_coeff = [float(normalize_number_string(v.replace("D", "E"))) for v in " ".join(xy_coeff).split()]
             dat_length = len(xy_coeff)
             nl = 12
             ndim = self.noa * self.nva
