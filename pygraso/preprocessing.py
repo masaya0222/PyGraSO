@@ -9,7 +9,7 @@ import argparse
 from .parser import gaussian_perser, decode_gaussian_parser
 
 
-def extract_info(mol_name, log_file_path, rwf_file_path, method="1", deriv=True):
+def extract_info(mol_name, log_file_path, rwf_file_path, method="1", deriv=True, state=1):
     parser = gaussian_perser(log_file_path, rwf_file_path, method)
     parser.read_basis()
 
@@ -30,7 +30,7 @@ def extract_info(mol_name, log_file_path, rwf_file_path, method="1", deriv=True)
         np.empty(0),
         np.empty(0),
     )
-    x_coeff = parser.get_xy_coeff()
+    x_coeff = parser.get_xy_coeff(state)
     if parser.nxy == 2:
         x_coeff, y_coeff = x_coeff
 
@@ -60,7 +60,7 @@ def check_file_exist(file_path):
         raise FileNotFoundError(f"Can't find {file_path}")
 
 
-def tg16(inp_file, work_dir=None, method="1", deriv=True):
+def tg16(inp_file, work_dir=None, method="1", deriv=True, state=1):
     if work_dir is None:
         work_dir = os.environ.get("GAUSS_SCRDIR")
     check_file_exist(inp_file)
@@ -81,6 +81,6 @@ def tg16(inp_file, work_dir=None, method="1", deriv=True):
         rwf_file_path = os.path.join(temp_dir, f"{mol_name}.rwf")
         check_file_exist(rwf_file_path)
         st = time.time()
-        extract_info(mol_name, log_file_path, rwf_file_path, method, deriv)
+        extract_info(mol_name, log_file_path, rwf_file_path, method, deriv, state)
         et = time.time()
         print(f"extract info time: {et - st}")

@@ -9,6 +9,13 @@ argparser = argparse.ArgumentParser(
 
 argparser.add_argument("input_file", type=str, help="g16 gjf path")
 argparser.add_argument(
+    "--state",
+    "-s",
+    type=int,
+    required=True,
+    help="state index (int)"
+)
+argparser.add_argument(
     "--deriv",
     "-d",
     type=bool,
@@ -33,4 +40,4 @@ argparser.add_argument(
 )
 args = argparser.parse_args()
 
-tg16(args.input_file, work_dir=args.work_dir, method=args.method, deriv=args.deriv)
+tg16(args.input_file, work_dir=args.work_dir, method=args.method, deriv=args.deriv, state=args.state)

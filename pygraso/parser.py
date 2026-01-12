@@ -434,7 +434,7 @@ class gaussian_perser(abstract_parser):
             raise ValueError(f"Error occur while reading mo_coeff_deriv:{e}")
         return self._mo_coeff_deriv
 
-    def get_xy_coeff(self):
+    def get_xy_coeff(self, state=1):
         def normalize_number_string(s: str) -> str:
             # Replace Fortran 'D' with 'E'
             s = s.replace("D", "E")
@@ -457,13 +457,13 @@ class gaussian_perser(abstract_parser):
             ndim = self.noa * self.nva
             mseek = int((dat_length - 12) / (ndim * 4 + 1))
 
-            xpy_coeff = np.array(xy_coeff[nl : nl + ndim]).reshape(self.noa, self.nva)
+            xpy_coeff = np.array(xy_coeff[nl+ndim*(2*state-2) : nl + ndim*(2*state-1)]).reshape(self.noa, self.nva)
             xpy_coeff = np.vstack((np.zeros((self.nfc, self.nva)), xpy_coeff))
 
             self._x_coeff = xpy_coeff
             if self.nxy == 2:
                 nl += ndim * 2 * mseek
-                xmy_coeff = np.array(xy_coeff[nl : nl + ndim]).reshape(
+                xmy_coeff = np.array(xy_coeff[nl +ndim*(2*state-2): nl + ndim*(2*state-1)]).reshape(
                     self.noa, self.nva
                 )
                 xmy_coeff = np.vstack((np.zeros((self.nfc, self.nva)), xmy_coeff))

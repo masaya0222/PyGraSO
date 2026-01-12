@@ -137,6 +137,7 @@ def main():
             config["triplet_rwf_file"],
             method=config["method"],
             deriv=config["deriv"],
+            state=int(config["triplet"][1:]),
         )
         logging.info("Extracted triplet state infomation")
         config["triplet_json_file"] = f"{triplet_mol_name}_log.json"
@@ -149,6 +150,7 @@ def main():
                 config["singlet_rwf_file"],
                 method=config["method"],
                 deriv=config["deriv"],
+                state=int(config["singlet"][1:]),
             )
             logging.info("Extracted singlet state information")
             config["singlet_json_file"] = f"{singlet_mol_name}_log.json"

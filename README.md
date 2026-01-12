@@ -92,8 +92,8 @@ singlet_rwf_file: "molecule_s1_freq.rwf"
 ### 2) Avoid large logs (dump derivative info instead)
 Use `tg16` to run Gaussian and dump the required coefficient-derivative information without keeping bulky logs, then run PyGraSO:
 ```
-tg16 molecule_s1_freq.gjf
-tg16 molecule_t1_freq.gjf
+tg16 molecule_s1_freq.gjf --state 1
+tg16 molecule_t1_freq.gjf --state 1
 pyGraso -c config_T1_S1.yaml
 ```
 `config_T1_S1.yaml` example:
