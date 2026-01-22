@@ -17,8 +17,14 @@ def calc_soc_s0t1(
     Z="one",
 ):
     mo_coeff = g_parser_t1.get_mo_coeff()
-    x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
-    xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
+    if g_parser_t1.nxy == 1:
+        xpy_coeff_t1, _ = g_parser_t1.get_xy_coeff()
+    elif g_parser_t1.nxy == 2:
+        x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
+        xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
+    else:
+        raise ValueError(f"g_parser_t1.nxy must be 1 or 2 but {g_parser_t1.nxy}")
+
     if normalize:
         norm_t1 = np.sqrt(np.trace(xpy_coeff_t1 @ xpy_coeff_t1.T) * 2.0)
         xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
@@ -66,15 +72,27 @@ def calc_soc_s1t1(
     Z="one",
 ):
     mo_coeff = g_parser_s1.get_mo_coeff()
-    x_coeff_s1, y_coeff_s1 = g_parser_s1.get_xy_coeff()
-    xpy_coeff_s1 = x_coeff_s1 + y_coeff_s1
+    if g_parser_s1.nxy == 1:
+        xpy_coeff_s1, _ = g_parser_s1.get_xy_coeff()
+    elif g_parser_s1.nxy == 2:
+        x_coeff_s1, y_coeff_s1 = g_parser_s1.get_xy_coeff()
+        xpy_coeff_s1 = x_coeff_s1 + y_coeff_s1
+    else:
+        raise ValueError(f"g_parser_s1.nxy must be 1 or 2 but {g_parser_s1.nxy}")
+
     if normalize:
         norm_s1 = np.sqrt(np.trace(xpy_coeff_s1 @ xpy_coeff_s1.T) * 2.0)
         xpy_coeff_s1 = xpy_coeff_s1 / norm_s1
     # xpy_coeff_s1[np.abs(xpy_coeff_s1) < coeff_thresh] = 0.0
 
-    x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
-    xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
+    if g_parser_t1.nxy == 1:
+        xpy_coeff_t1, _ = g_parser_t1.get_xy_coeff()
+    elif g_parser_t1.nxy == 2:
+        x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
+        xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
+    else:
+        raise ValueError(f"g_parser_t1.nxy must be 1 or 2 but {g_parser_t1.nxy}")
+
     if normalize:
         norm_t1 = np.sqrt(np.trace(xpy_coeff_t1 @ xpy_coeff_t1.T) * 2.0)
         xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
@@ -150,15 +168,27 @@ def calc_soc_s0t1_deriv(
     mo_coeff_deriv_i = mo_coeff_deriv[:, :, : g_parser_t1.nfc + g_parser_t1.noa, :]
     mo_coeff_deriv_a = mo_coeff_deriv[:, :, g_parser_t1.nfc + g_parser_t1.noa :, :]
 
-    x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
-    xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
+    if g_parser_t1.nxy == 1:
+        xpy_coeff_t1, _ = g_parser_t1.get_xy_coeff()
+    elif g_parser_t1.nxy == 2:
+        x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
+        xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
+    else:
+        raise ValueError(f"g_parser_t1.nxy must be 1 or 2 but {g_parser_t1.nxy}")
+
     if normalize:
         norm_t1 = np.sqrt(np.trace(xpy_coeff_t1 @ xpy_coeff_t1.T) * 2.0)
         xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
     # xpy_coeff_t1[np.abs(xpy_coeff_t1) < coeff_thresh] = 0.0
 
-    x_coeff_deriv_t1, y_coeff_deriv_t1 = g_parser_t1.get_xy_coeff_deriv()
-    xpy_coeff_deriv_t1 = x_coeff_deriv_t1 + y_coeff_deriv_t1
+    if g_parser_t1.nxy == 1:
+        xpy_coeff_deriv_t1, _ = g_parser_t1.get_xy_coeff_deriv()
+    elif g_parser_t1.nxy == 2:
+        x_coeff_deriv_t1, y_coeff_deriv_t1 = g_parser_t1.get_xy_coeff_deriv()
+        xpy_coeff_deriv_t1 = x_coeff_deriv_t1 + y_coeff_deriv_t1
+    else:
+        raise ValueError(f"g_parser_t1.nxy must be 1 or 2 but {g_parser_t1.nxy}")
+
     if normalize:
         xpy_coeff_deriv_t1 = (
             xpy_coeff_deriv_t1
@@ -253,15 +283,27 @@ def calc_soc_s1t1_deriv(
     mo_coeff_deriv_i = mo_coeff_deriv[:, :, : g_parser_s1.nfc + g_parser_s1.noa, :]
     mo_coeff_deriv_a = mo_coeff_deriv[:, :, g_parser_s1.nfc + g_parser_s1.noa :, :]
 
-    x_coeff_s1, y_coeff_s1 = g_parser_s1.get_xy_coeff()
-    xpy_coeff_s1 = x_coeff_s1 + y_coeff_s1
+    if g_parser_s1.nxy == 1:
+        xpy_coeff_s1, _ = g_parser_s1.get_xy_coeff()
+    elif g_parser_s1.nxy == 2:
+        x_coeff_s1, y_coeff_s1 = g_parser_s1.get_xy_coeff()
+        xpy_coeff_s1 = x_coeff_s1 + y_coeff_s1
+    else:
+        raise ValueError(f"g_parser_s1.nxy must be 1 or 2 but {g_parser_s1.nxy}")
+
     if normalize:
         norm_s1 = np.sqrt(np.trace(xpy_coeff_s1 @ xpy_coeff_s1.T) * 2.0)
         xpy_coeff_s1 = xpy_coeff_s1 / norm_s1
     # xpy_coeff_s1[np.abs(xpy_coeff_s1) < coeff_thresh] = 0.0
 
-    x_coeff_deriv_s1, y_coeff_deriv_s1 = g_parser_s1.get_xy_coeff_deriv()
-    xpy_coeff_deriv_s1 = x_coeff_deriv_s1 + y_coeff_deriv_s1
+    if g_parser_s1.nxy == 1:
+        xpy_coeff_deriv_s1, _ = g_parser_s1.get_xy_coeff_deriv()
+    elif g_parser_s1.nxy == 2:
+        x_coeff_deriv_s1, y_coeff_deriv_s1 = g_parser_s1.get_xy_coeff_deriv()
+        xpy_coeff_deriv_s1 = x_coeff_deriv_s1 + y_coeff_deriv_s1
+    else:
+        raise ValueError(f"g_parser_s1.nxy must be 1 or 2 but {g_parser_s1.nxy}")
+
     if normalize:
         xpy_coeff_deriv_s1 = (
             xpy_coeff_deriv_s1
@@ -272,15 +314,27 @@ def calc_soc_s1t1_deriv(
             * xpy_coeff_s1[None, None, :, :]
         ) / norm_s1
 
-    x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
-    xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
+    if g_parser_t1.nxy == 1:
+        xpy_coeff_t1, _ = g_parser_t1.get_xy_coeff()
+    elif g_parser_t1.nxy == 2:
+        x_coeff_t1, y_coeff_t1 = g_parser_t1.get_xy_coeff()
+        xpy_coeff_t1 = x_coeff_t1 + y_coeff_t1
+    else:
+        raise ValueError(f"g_parser_t1.nxy must be 1 or 2 but {g_parser_t1.nxy}")
+
     if normalize:
         norm_t1 = np.sqrt(np.trace(xpy_coeff_t1 @ xpy_coeff_t1.T) * 2.0)
         xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
     # xpy_coeff_t1[np.abs(xpy_coeff_t1) < coeff_thresh] = 0.0
 
-    x_coeff_deriv_t1, y_coeff_deriv_t1 = g_parser_t1.get_xy_coeff_deriv()
-    xpy_coeff_deriv_t1 = x_coeff_deriv_t1 + y_coeff_deriv_t1
+    if g_parser_t1.nxy == 1:
+        xpy_coeff_deriv_t1, _ = g_parser_t1.get_xy_coeff_deriv()
+    elif g_parser_t1.nxy == 2:
+        x_coeff_deriv_t1, y_coeff_deriv_t1 = g_parser_t1.get_xy_coeff_deriv()
+        xpy_coeff_deriv_t1 = x_coeff_deriv_t1 + y_coeff_deriv_t1
+    else:
+        raise ValueError(f"g_parser_t1.nxy must be 1 or 2 but {g_parser_t1.nxy}")
+
     if normalize:
         xpy_coeff_deriv_t1 = (
             xpy_coeff_deriv_t1

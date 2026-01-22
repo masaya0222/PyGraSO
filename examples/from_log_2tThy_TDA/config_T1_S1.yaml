@@ -1,0 +1,10 @@
+triplet: "T1"
+singlet: "S1"
+dump: False
+xyz_file: "2tThy.xyz"
+zeff_type: "orca"
+
+triplet_log_file: "2tThy_t1_freq.log"
+triplet_rwf_file: "2tThy_t1_freq.rwf"
+singlet_log_file: "2tThy_s1_freq.log"
+singlet_rwf_file: "2tThy_s1_freq.rwf"
