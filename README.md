@@ -114,16 +114,26 @@ singlet_npz_file: "molecule_s1_freq_mat.npz"
 
 If you use **PyGraSO** in your research, please cite:
 
-- Masaya Hagai, Kazuhiro J. Fujimoto, Takeshi Yanai. *PyGraSO: Analytical Nuclear Derivatives of Spin–Orbit Coupling for Intersystem Crossing Dynamics Simulations*. ChemRxiv, 2025. https://doi.org/10.26434/chemrxiv-2025-0ssh5
+- Masaya Hagai, Kazuhiro J. Fujimoto, Takeshi Yanai, PyGraSO: Analytical Nuclear Derivatives of Spin-Orbit Coupling for Intersystem Crossing Dynamics Simulations. J. Chem. Theory Comput. 2025, 21 (22), 11604–11619.
+  
+
 
 ### BibTeX
 ```bibtex
-@article{Hagai2025PyGraSO,
-  title   = {PyGraSO: Analytical Nuclear Derivatives of Spin-Orbit Coupling for Intersystem Crossing Dynamics Simulations},
-  author  = {Hagai, Masaya and Fujimoto, Kazuhiro J. and Yanai, Takeshi},
-  journal = {ChemRxiv},
-  year    = {2025},
-  doi     = {10.26434/chemrxiv-2025-0ssh5},
-  url     = {https://doi.org/10.26434/chemrxiv-2025-0ssh5},
-  note    = {Version 1, preprint}
+@ARTICLE{Hagai2025PyGraSO,
+  title     = "{PyGraSO}: Analytical nuclear derivatives of spin-orbit coupling
+               for intersystem crossing dynamics simulations",
+  author    = "Hagai, Masaya and Fujimoto, Kazuhiro J and Yanai, Takeshi",
+  journal   = "J. Chem. Theory Comput.",
+  publisher = "American Chemical Society (ACS)",
+  volume    =  21,
+  number    =  22,
+  pages     = "11604--11619",
+  month     =  nov,
+  year      =  2025,
+  doi       = "10.1021/acs.jctc.5c01442",
+  pmid      =  41190661,
+  issn      = "1549-9618,1549-9626",
+  language  = "en"
 }
+
