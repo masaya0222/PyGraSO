@@ -114,6 +114,7 @@ def main():
         "method": 1,
         "deriv": True,
         "dump": False,
+        "charge": 0,
         "triplet": "",
         "singlet": "",
         "xyz_file": "",
@@ -160,11 +161,13 @@ def main():
     )
 
     atoms, coordinates = read_xyz(config["xyz_file"])
+    charge = int(config["charge"])
 
     if config["is_ground"]:
         soc_sntn = calc_soc_s0t1(
             atoms,
             coordinates,
+            charge,
             triplet_parser,
             basis=triplet_parser._basis,
             Z=config["zeff_type"],
@@ -176,6 +179,7 @@ def main():
         soc_sntn = calc_soc_s1t1(
             atoms,
             coordinates,
+            charge,
             singlet_parser,
             triplet_parser,
             basis=triplet_parser._basis,
@@ -197,6 +201,7 @@ def main():
             vsoc_sntn = calc_soc_s0t1_deriv(
                 atoms,
                 coordinates,
+                charge,
                 triplet_parser,
                 basis=triplet_parser._basis,
                 Z=config["zeff_type"],
@@ -205,6 +210,7 @@ def main():
             vsoc_sntn = calc_soc_s1t1_deriv(
                 atoms,
                 coordinates,
+                charge,
                 singlet_parser,
                 triplet_parser,
                 basis=triplet_parser._basis,

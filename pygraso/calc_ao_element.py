@@ -141,9 +141,10 @@ def sozeff(atom, zeff_type="one"):
 
 
 class calc_ao_element:
-    def __init__(self, atoms, coordinates, basis=None):
+    def __init__(self, atoms, coordinates, charge, basis=None):
         self.atoms = atoms
         self.coordinates = coordinates
+        self.charge = charge
         self.basis = basis
         self.mol = self.setup_mol()
         self.permu_basis, self.basis_idx = self.setup_permu()
@@ -166,6 +167,7 @@ class calc_ao_element:
             (symbol, coord) for symbol, coord in zip(self.atoms, self.coordinates)
         ]
         mol.unit = "angstrom"
+        mol.charge = self.charge
         mol.basis = self.basis
         mol.symmetry = False
         mol.cart = True
