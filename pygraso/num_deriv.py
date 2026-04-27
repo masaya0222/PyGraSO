@@ -242,6 +242,7 @@ class numerical_deriv:
                     pert_coords = perturb_coordinates(
                         self.coordinates, atom_idx, axis_idx, delta
                     )
+                    charge = 0
                     if property_name == "mo_coeff":
                         prop = g_parser.get_mo_coeff()
                     if property_name == "xy_coeff":
@@ -253,7 +254,7 @@ class numerical_deriv:
                         prop = g_parser.get_tdip()
                     if property_name == "ao_soc":
                         ao_calculator = calc_ao_element(
-                            self.atoms, pert_coords, basis=g_parser.read_basis()
+                            self.atoms, pert_coords, charge, basis=g_parser.read_basis()
                         )
                         prop = ao_calculator.get_ao_soc()
                     if property_name == "soc_s0t1":
@@ -267,7 +268,9 @@ class numerical_deriv:
                         g_parser_t1 = gaussian_perser(
                             pert_t1_log_file_name, pert_t1_rwf_file_name
                         )
-                        prop = calc_soc_s0t1(self.atoms, pert_coords, g_parser_t1, Z=Z)
+                        prop = calc_soc_s0t1(
+                            self.atoms, pert_coords, charge, g_parser_t1, Z=Z
+                        )
                     if property_name == "soc_s1t1":
                         pert_mol_name_t1 = os.path.join(
                             self.calc_dir,
@@ -290,7 +293,12 @@ class numerical_deriv:
                             pert_s1_log_file_name, pert_s1_rwf_file_name
                         )
                         prop = calc_soc_s1t1(
-                            self.atoms, pert_coords, g_parser_s1, g_parser_t1, Z=Z
+                            self.atoms,
+                            pert_coords,
+                            charge,
+                            g_parser_s1,
+                            g_parser_t1,
+                            Z=Z,
                         )
                     properties.append(prop)
                 if self.method == "three":

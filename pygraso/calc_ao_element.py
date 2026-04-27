@@ -141,7 +141,7 @@ def sozeff(atom, zeff_type="one"):
 
 
 class calc_ao_element:
-    def __init__(self, atoms, coordinates, charge, basis=None):
+    def __init__(self, atoms, coordinates, charge=0, basis=None):
         self.atoms = atoms
         self.coordinates = coordinates
         self.charge = charge
@@ -154,6 +154,8 @@ class calc_ao_element:
         self._ao_ovlp = None
         self._ao_norm = None
         self.get_ao_ovlp()
+
+        self._ao_ovlp_deriv = None
 
         self._ao_dip = None
         self._ao_dip_deriv = None
@@ -230,6 +232,34 @@ class calc_ao_element:
         except Exception as e:
             raise ValueError(f"Error occur while reading and ao_ovlp:{e}")
         return self._ao_ovlp
+
+    def get_ao_ovlp_deriv(self):
+        if self._ao_ovlp_deriv is not None:
+            return self._ao_ovlp_deriv
+
+        try:
+            intor_name = "int1e_ipovlp_cart"
+            ao_ovlp_deriv_tmp = gto.getints(
+                intor_name, self.mol._atm, self.mol._bas, env=self.mol._env
+            )
+            ao_ovlp_deriv_tmp = ao_ovlp_deriv_tmp[
+                np.ix_(np.arange(3), self.permu_basis, self.permu_basis)
+            ]
+            ao_ovlp_deriv = np.zeros((self.natoms, 3, self.nbasis, self.nbasis))
+            for i in range(3):  # dx, dy, dz
+                for j in range(self.nbasis):
+                    for k in range(self.nbasis):
+                        v = ao_ovlp_deriv_tmp[i, j, k]
+                        ao_ovlp_deriv[self.basis_idx[j], i, k, j] += -v
+            ao_ovlp_deriv = (
+                ao_ovlp_deriv
+                / self._ao_norm[None, None, None, :]
+                / self._ao_norm[None, None, :, None]
+            )
+            self._ao_ovlp_deriv = ao_ovlp_deriv
+        except Exception as e:
+            raise ValueError(f"Error occur while reading and ao_ovlp_deriv:{e}")
+        return self._ao_ovlp_deriv
 
     def get_ao_dip(self):
         if self._ao_dip is not None:

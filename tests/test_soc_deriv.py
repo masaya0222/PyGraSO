@@ -15,6 +15,7 @@ def test_h2o_ao_soc_deriv():
         [0.000000, 0.000000, 0.957200],
         [0.000000, 0.757160, -0.478600],
     ]
+    charge = 0
 
     current_dir = os.path.dirname(__file__)
 
@@ -103,6 +104,7 @@ def test_h2o_td_soc_s0t1_deriv():
         [0.000000, 0.000000, 0.957200],
         [0.000000, 0.757160, -0.478600],
     ]
+    charge = 0
     current_dir = os.path.dirname(__file__)
 
     log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.log")
@@ -110,7 +112,7 @@ def test_h2o_td_soc_s0t1_deriv():
     parser_t1 = gaussian_perser(log_file_name, rwf_file_name)
 
     calc_dir = os.path.join(current_dir, f"data/num/")
-    soc_s0t1_deriv_anal = calc_soc_s0t1_deriv(atoms, coordinates, parser_t1)
+    soc_s0t1_deriv_anal = calc_soc_s0t1_deriv(atoms, coordinates, charge, parser_t1)
 
     num_deriv = numerical_deriv(mol_name, atoms, coordinates, calc_dir=calc_dir)
     soc_s0t1_deriv_num = num_deriv.execute_num_deriv("soc_s0t1")
@@ -126,6 +128,7 @@ def test_h2o_td_soc_s1t1_deriv():
         [0.000000, 0.000000, 0.957200],
         [0.000000, 0.757160, -0.478600],
     ]
+    charge = 0
     current_dir = os.path.dirname(__file__)
 
     s1_log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_s1.log")
@@ -136,7 +139,9 @@ def test_h2o_td_soc_s1t1_deriv():
     parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
 
     calc_dir = os.path.join(current_dir, f"data/num/")
-    soc_s1t1_deriv_anal = calc_soc_s1t1_deriv(atoms, coordinates, parser_s1, parser_t1)
+    soc_s1t1_deriv_anal = calc_soc_s1t1_deriv(
+        atoms, coordinates, charge, parser_s1, parser_t1
+    )
 
     num_deriv = numerical_deriv(mol_name, atoms, coordinates, calc_dir=calc_dir)
     soc_s1t1_deriv_num = num_deriv.execute_num_deriv("soc_s1t1")
@@ -152,6 +157,7 @@ def test_h2o_d_td_soc_s0t1_deriv():
         [0.000000, 0.000000, 0.957200],
         [0.000000, 0.757160, -0.478600],
     ]
+    charge = 0
     current_dir = os.path.dirname(__file__)
 
     log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_t1.log")
@@ -160,7 +166,7 @@ def test_h2o_d_td_soc_s0t1_deriv():
 
     calc_dir = os.path.join(current_dir, f"data/num/")
     soc_s0t1_deriv_anal = calc_soc_s0t1_deriv(
-        atoms, coordinates, parser_t1, basis="6-31G(d)"
+        atoms, coordinates, charge, parser_t1, basis="6-31G(d)"
     )
 
     num_deriv = numerical_deriv(
@@ -179,6 +185,7 @@ def test_h2o_d_td_soc_s1t1_deriv():
         [0.000000, 0.000000, 0.957200],
         [0.000000, 0.757160, -0.478600],
     ]
+    charge = 0
     current_dir = os.path.dirname(__file__)
 
     s1_log_file_name = os.path.join(current_dir, f"data/soc_data/{mol_name}_s1.log")
@@ -192,6 +199,7 @@ def test_h2o_d_td_soc_s1t1_deriv():
     soc_s1t1_deriv_anal = calc_soc_s1t1_deriv(
         atoms,
         coordinates,
+        charge,
         parser_s1,
         parser_t1,
         basis="6-31G(d)",
@@ -213,6 +221,7 @@ def test_ch2o_td_soc_s0t1_deriv():
         [-0.718439, 0.939705, 0.000097],
         [-0.718441, -0.939705, 0.000136],
     ]
+    charge = 0
     current_dir = os.path.dirname(__file__)
 
     mol_name = "ch2o_td"
@@ -221,7 +230,7 @@ def test_ch2o_td_soc_s0t1_deriv():
     parser_t1 = gaussian_perser(log_file_name, rwf_file_name)
 
     calc_dir = os.path.join(current_dir, f"data/num/")
-    soc_s0t1_deriv_anal = calc_soc_s0t1_deriv(atoms, coordinates, parser_t1)
+    soc_s0t1_deriv_anal = calc_soc_s0t1_deriv(atoms, coordinates, charge, parser_t1)
 
     num_deriv = numerical_deriv(mol_name, atoms, coordinates, calc_dir=calc_dir)
     soc_s0t1_deriv_num = num_deriv.execute_num_deriv("soc_s0t1")
@@ -237,6 +246,7 @@ def test_ch2o_td_soc_s1t1_deriv():
         [-0.718439, 0.939705, 0.000097],
         [-0.718441, -0.939705, 0.000136],
     ]
+    charge = 0
     current_dir = os.path.dirname(__file__)
 
     mol_name = "ch2o_td"
@@ -249,7 +259,9 @@ def test_ch2o_td_soc_s1t1_deriv():
     parser_t1 = gaussian_perser(t1_log_file_name, t1_rwf_file_name)
 
     calc_dir = os.path.join(current_dir, f"data/num/")
-    soc_s1t1_deriv_anal = calc_soc_s1t1_deriv(atoms, coordinates, parser_s1, parser_t1)
+    soc_s1t1_deriv_anal = calc_soc_s1t1_deriv(
+        atoms, coordinates, charge, parser_s1, parser_t1
+    )
 
     num_deriv = numerical_deriv(mol_name, atoms, coordinates, calc_dir=calc_dir)
     soc_s1t1_deriv_num = num_deriv.execute_num_deriv("soc_s1t1")

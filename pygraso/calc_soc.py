@@ -31,7 +31,9 @@ def calc_soc_s0t1(
         xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
     # xpy_coeff_t1[np.abs(xpy_coeff_t1) < coeff_thresh] = 0.0
 
-    ao_calculator = calc_ao_element(atoms, coordinates, charge, basis=g_parser_t1.read_basis())
+    ao_calculator = calc_ao_element(
+        atoms, coordinates, charge, basis=g_parser_t1.read_basis()
+    )
     ao_soc = ao_calculator.get_ao_soc(Z=Z)
 
     mo_soc = mo_coeff @ ao_soc @ mo_coeff.T
@@ -100,7 +102,9 @@ def calc_soc_s1t1(
         xpy_coeff_t1 = xpy_coeff_t1 / norm_t1
     # xpy_coeff_t1[np.abs(xpy_coeff_t1) < coeff_thresh] = 0.0
 
-    ao_calculator = calc_ao_element(atoms, coordinates, charge, basis=g_parser_t1.read_basis())
+    ao_calculator = calc_ao_element(
+        atoms, coordinates, charge, basis=g_parser_t1.read_basis()
+    )
     ao_soc = ao_calculator.get_ao_soc(Z=Z)
 
     mo_soc = mo_coeff @ ao_soc @ mo_coeff.T
@@ -160,7 +164,7 @@ def calc_soc_s1t1(
 
 
 def calc_soc_s0t1_deriv(
-        atoms, coordinates, charge, g_parser_t1, normalize=True, basis=None, Z="one"
+    atoms, coordinates, charge, g_parser_t1, normalize=True, basis=None, Z="one"
 ):
     mo_coeff = g_parser_t1.get_mo_coeff()
     mo_coeff_deriv = g_parser_t1.get_mo_coeff_deriv()
@@ -201,7 +205,9 @@ def calc_soc_s0t1_deriv(
             * xpy_coeff_t1[None, None, :, :]
         ) / norm_t1
 
-    ao_calculator = calc_ao_element(atoms, coordinates, charge, basis=g_parser_t1.read_basis())
+    ao_calculator = calc_ao_element(
+        atoms, coordinates, charge, basis=g_parser_t1.read_basis()
+    )
     ao_soc = ao_calculator.get_ao_soc(Z=Z)
     ao_soc_deriv = ao_calculator.get_ao_soc_deriv(Z=Z)
 
@@ -276,7 +282,14 @@ def calc_soc_s0t1_deriv(
 
 
 def calc_soc_s1t1_deriv(
-        atoms, coordinates, charge, g_parser_s1, g_parser_t1, normalize=True, basis=None, Z="one"
+    atoms,
+    coordinates,
+    charge,
+    g_parser_s1,
+    g_parser_t1,
+    normalize=True,
+    basis=None,
+    Z="one",
 ):
     mo_coeff = g_parser_s1.get_mo_coeff()
     mo_coeff_deriv = g_parser_s1.get_mo_coeff_deriv()
@@ -347,7 +360,9 @@ def calc_soc_s1t1_deriv(
             * xpy_coeff_t1[None, None, :, :]
         ) / norm_t1
 
-    ao_calculator = calc_ao_element(atoms, coordinates, charge, basis=g_parser_t1.read_basis())
+    ao_calculator = calc_ao_element(
+        atoms, coordinates, charge, basis=g_parser_t1.read_basis()
+    )
     ao_soc = ao_calculator.get_ao_soc(Z=Z)
     ao_soc_deriv = ao_calculator.get_ao_soc_deriv(Z=Z)
 

@@ -444,6 +444,7 @@ class gaussian_perser(abstract_parser):
                 if len(parts) == 2 and parts[1].isdigit():
                     s = parts[0] + "E-" + parts[1]
             return s
+
         if self._x_coeff is not None:
             if self.nxy == 1:
                 return self._x_coeff
@@ -451,21 +452,26 @@ class gaussian_perser(abstract_parser):
                 return self._x_coeff, self._y_coeff
         try:
             xy_coeff = self.rwf_parser.parse(self.rwf_parser.XY_COEFFS)
-            xy_coeff = [float(normalize_number_string(v.replace("D", "E"))) for v in " ".join(xy_coeff).split()]
+            xy_coeff = [
+                float(normalize_number_string(v.replace("D", "E")))
+                for v in " ".join(xy_coeff).split()
+            ]
             dat_length = len(xy_coeff)
             nl = 12
             ndim = self.noa * self.nva
             mseek = int((dat_length - 12) / (ndim * 4 + 1))
 
-            xpy_coeff = np.array(xy_coeff[nl+ndim*(2*state-2) : nl + ndim*(2*state-1)]).reshape(self.noa, self.nva)
+            xpy_coeff = np.array(
+                xy_coeff[nl + ndim * (2 * state - 2) : nl + ndim * (2 * state - 1)]
+            ).reshape(self.noa, self.nva)
             xpy_coeff = np.vstack((np.zeros((self.nfc, self.nva)), xpy_coeff))
 
             self._x_coeff = xpy_coeff
             if self.nxy == 2:
                 nl += ndim * 2 * mseek
-                xmy_coeff = np.array(xy_coeff[nl +ndim*(2*state-2): nl + ndim*(2*state-1)]).reshape(
-                    self.noa, self.nva
-                )
+                xmy_coeff = np.array(
+                    xy_coeff[nl + ndim * (2 * state - 2) : nl + ndim * (2 * state - 1)]
+                ).reshape(self.noa, self.nva)
                 xmy_coeff = np.vstack((np.zeros((self.nfc, self.nva)), xmy_coeff))
                 self._x_coeff = (xpy_coeff + xmy_coeff) / 2.0
                 self._y_coeff = (xpy_coeff - xmy_coeff) / 2.0

@@ -9,7 +9,9 @@ import argparse
 from .parser import gaussian_perser, decode_gaussian_parser
 
 
-def extract_info(mol_name, log_file_path, rwf_file_path, method="1", deriv=True, state=1):
+def extract_info(
+    mol_name, log_file_path, rwf_file_path, method="1", deriv=True, state=1
+):
     parser = gaussian_perser(log_file_path, rwf_file_path, method)
     parser.read_basis()
 
